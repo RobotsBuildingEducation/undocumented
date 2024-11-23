@@ -23,7 +23,8 @@ export const getOpenAiRequestOptions = (
   signal,
 });
 
-const CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions";
+// const CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions";
+const CHAT_COMPLETIONS_URL = "https://api.x.ai/v1/chat/completions";
 
 const textDecoder = new TextDecoder("utf-8");
 
@@ -171,7 +172,7 @@ export const useChatCompletion = (apiParams) => {
     _setMessages(
       updateLastItem((msg) => ({
         content: `${msg.content}${chunkContent}`,
-        role: `${msg.role}${chunkRole}`,
+        role: chunkRole,
         timestamp: 0,
         meta: {
           ...msg.meta,

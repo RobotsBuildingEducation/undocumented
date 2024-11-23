@@ -7,73 +7,118 @@ import {
   FormControl,
   Alert,
 } from "react-bootstrap";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { database } from "../database/setup";
-import { lang } from "../utils/utils";
+import isEmpty from "lodash/isEmpty";
+import { doc, setDoc } from "firebase/firestore";
 
-const SettingsModal = ({ show, handleClose, updateUserId, language }) => {
+import { lang } from "../utils/utils";
+import { database } from "../database/setup";
+import USStatesDropdown from "./USStatesDropdown";
+import { useUserStore } from "../store/useUserStore";
+
+const SettingsModal = ({ show, handleClose, language, auth }) => {
+  const { user, setUser } = useUserStore(); // Access Zustand store
   const [inputId, setInputId] = useState("");
   const [error, setError] = useState("");
-  const [currentId, setCurrentId] = useState("");
-  const [copySuccess, setCopySuccess] = useState(false);
+
   const [accountSwitchSuccess, setAccountSwitchSuccess] = useState(false);
+  const [selectedState, setSelectedState] = useState("");
+
+  const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
-    const storedId = localStorage.getItem("uniqueId");
-    if (storedId) {
-      setCurrentId(storedId);
-    }
+    setSelectedState(user?.state === "All states" ? "" : user?.state);
   }, []);
+
+  useEffect(() => {
+    // if (user?.local_npub) {
+    //   setInputId(user.local_npub); // Pre-fill input with current user ID
+    // }
+  }, [user]);
 
   const isValidDID = (did) => {
     return /^did:(key|dht|ion):/.test(did);
   };
 
   const handleSave = async () => {
-    if (!isValidDID(inputId)) {
-      setError(lang[language].invalidDid);
-      setAccountSwitchSuccess(false);
-      return;
-    }
+    console.log("inputID...", inputId);
+    // if (inputId !== "") {
+    // if (!isValidDID(inputId)) {
+    //   setError(lang[language].invalidDid);
+    //   setAccountSwitchSuccess(false);
+    //   return;
+    // }
+    // return;
+    // }
 
+    console.log(auth(inputId));
+    let newId = auth(inputId);
     try {
-      const userDocRef = doc(database, "users", inputId);
-      const docSnap = await getDoc(userDocRef);
+      const userDocRef = doc(database, "users", newId);
+      const stateresult = isEmpty(selectedState) ? "All states" : selectedState;
 
-      if (!docSnap.exists()) {
-        await setDoc(userDocRef, {
-          uniqueId: inputId,
-          createdAt: new Date().toISOString(),
-        });
-      }
+      const updatedUser = {
+        local_npub: newId || newId,
+        state: stateresult,
+        createdAt: new Date().toISOString(),
+      };
 
-      localStorage.setItem("uniqueId", inputId);
-      updateUserId(inputId);
-      setCurrentId(inputId);
+      await setDoc(userDocRef, updatedUser, { merge: true }); // Save to Firestore
+
+      localStorage.setItem("local_npub", updatedUser.local_npub); // Persist locally
+
+      setUser(updatedUser); // Update Zustand store
       setAccountSwitchSuccess(true);
       setError("");
+      setInputId("");
     } catch (err) {
-      console.error("Error checking user ID:", err);
+      console.error("Error saving user data:", err);
       setError(lang[language].errorOccurred);
       setAccountSwitchSuccess(false);
     }
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(currentId);
-    setCopySuccess(true);
-    setTimeout(() => setCopySuccess(false), 2000);
+    if (user?.local_npub) {
+      navigator.clipboard.writeText(localStorage.getItem("local_nsec"));
+      setCopySuccess(true);
+
+      setTimeout(() => {
+        setCopySuccess(false);
+      }, 2000);
+    }
   };
 
   return (
     <Modal show={show} onHide={handleClose} centered>
       <Modal.Header closeButton>
-        <Modal.Title>{lang[language].title}</Modal.Title>
+        <Modal.Title>{lang[language].settings}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {lang[language].instructions}
+        <div
+          style={{
+            color: "#565656",
+            fontWeight: "bold",
+            backgroundColor: "#FEEBC8",
+            padding: 10,
+            borderRadius: 20,
+          }}
+        >
+          {lang[language].instructions}
+        </div>
+        <br />
+        <Button variant="outline-secondary" onMouseDown={handleCopy}>
+          {copySuccess ? lang[language].copiedKeys : lang[language].copyKeys}
+        </Button>
         <br />
         <br />
+        <Button
+          variant="link"
+          href="https://patreon.com/NotesAndOtherStuff"
+          target="_blank"
+        >
+          {lang[language].visit}
+        </Button>
+        <br /> <br />
         {accountSwitchSuccess && (
           <Alert variant="success">{lang[language].accountSwitched}</Alert>
         )}
@@ -83,14 +128,20 @@ const SettingsModal = ({ show, handleClose, updateUserId, language }) => {
             <InputGroup>
               <FormControl
                 type="text"
-                value={`${currentId.slice(0, 16)}...`}
+                value={
+                  user?.local_npub ? `${user.local_npub.slice(0, 16)}...` : ""
+                }
                 readOnly
               />
-              <Button variant="outline-secondary" onMouseDown={handleCopy}>
-                {copySuccess ? lang[language].copied : lang[language].copy}
-              </Button>
             </InputGroup>
           </Form.Group>
+          <br />
+          <USStatesDropdown
+            lang={lang}
+            language={language}
+            selectedState={selectedState}
+            onSelectState={setSelectedState}
+          />
           <br />
           <Form.Group controlId="formUserId">
             <Form.Label>{lang[language].switchAccounts}</Form.Label>
@@ -106,14 +157,7 @@ const SettingsModal = ({ show, handleClose, updateUserId, language }) => {
       </Modal.Body>
       <Modal.Footer>
         <Button variant="dark" onMouseDown={handleSave}>
-          {lang[language].switch}
-        </Button>
-        <Button
-          variant="link"
-          href="https://robotsbuildingeducation.com"
-          target="_blank"
-        >
-          {lang[language].visit}
+          {lang[language].modify}
         </Button>
         <Button variant="tertiary" onMouseDown={handleClose}>
           {lang[language].close}

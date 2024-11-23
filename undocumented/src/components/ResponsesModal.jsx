@@ -22,7 +22,7 @@ import { lang } from "../utils/utils";
 const ResponsesModal = ({
   show,
   handleClose,
-  uniqueId,
+  local_npub,
   loadResponses,
   language,
 }) => {
@@ -34,9 +34,9 @@ const ResponsesModal = ({
   const [filterText, setFilterText] = useState("");
 
   useEffect(() => {
-    if (show && uniqueId) {
+    if (show && local_npub) {
       const fetchResponses = async () => {
-        const userDocRef = doc(database, "users", uniqueId);
+        const userDocRef = doc(database, "users", local_npub);
         const responsesCollectionRef = collection(userDocRef, "responses");
         const responseDocs = await getDocs(responsesCollectionRef);
         const responsesData = responseDocs.docs
@@ -51,11 +51,11 @@ const ResponsesModal = ({
 
       fetchResponses();
     }
-  }, [show, uniqueId]);
+  }, [show, local_npub]);
 
   const updateResponse = async () => {
-    if (uniqueId && selectedResponse) {
-      const userDocRef = doc(database, "users", uniqueId);
+    if (local_npub && selectedResponse) {
+      const userDocRef = doc(database, "users", local_npub);
       const responseDocRef = doc(userDocRef, "responses", selectedResponse.id);
       await updateDoc(responseDocRef, {
         title: editedTitle,
@@ -76,8 +76,8 @@ const ResponsesModal = ({
   };
 
   const deleteResponse = async (id) => {
-    if (uniqueId) {
-      const userDocRef = doc(database, "users", uniqueId);
+    if (local_npub) {
+      const userDocRef = doc(database, "users", local_npub);
       const responseDocRef = doc(userDocRef, "responses", id);
       await deleteDoc(responseDocRef);
       const updatedResponses = responses.filter((resp) => resp.id !== id);
@@ -236,7 +236,7 @@ const ResponsesModal = ({
         )}
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onMouseDown={handleClose}>
+        <Button variant="tertiary" onMouseDown={handleClose}>
           {lang[language].close}
         </Button>
       </Modal.Footer>
