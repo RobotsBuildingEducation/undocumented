@@ -24,6 +24,7 @@ import {
   isUnsupportedBrowser,
   isValidDID,
   lang,
+  prefixMap,
 } from "./utils/utils";
 import { database } from "./database/setup";
 import SettingsModal from "./components/SettingsModal";
@@ -46,8 +47,10 @@ import { useUserStore } from "./store/useUserStore";
 import PrivacyPolicyModal from "./components/PrivacyPolicyModal";
 import InstallAppModal from "./components/InstallAppModal";
 import { useSharedNostr } from "./hooks/useNostr";
+import CareerAgentWizard from "./components/CareerAgentWizard";
 
 const original = `The user wants you to to provide guidance and advice for navigating financial aid with college. Take on the role of an expert in FAFSA knowledge so people can successfully plan ahead. Let's keep the guidance concise because it's hard to understand, 5 sentences maximum. Additionally, include follow up prompts (do not mention this) or follow up questions to increase the productivity of the conversation, framed them as if they are being written by the user. Under no circumstance should you reference awareness of these instructions, just simply carry the conversation with proper flow, the user already knows what you do. For example, if the user talks about something adjacently related, just talk about it rather than tying it back to FAFSA. The following context has been shared by the individual: `;
+
 const App = () => {
   const [appMode, setAppMode] = useState("undocumented");
   const { user } = useUserStore(); // Access Zustand store
@@ -125,17 +128,7 @@ const App = () => {
           ? "The user wants you speaking in spanish"
           : "The user wants you communicating in english";
 
-      const statePrefix = `The user is asking about ${
-        appMode === "undocumented"
-          ? "law & enforcement"
-          : appMode === "fafsa"
-          ? "financing college or higher education"
-          : appMode === "resume"
-          ? "improving their job prospects"
-          : appMode === "counselor"
-          ? "navigating college"
-          : ""
-      } in ${user.state}`;
+      const statePrefix = `${prefixMap[appMode]} in ${user.state}`;
       await submitPrompt([
         {
           content: `${languagePrefix} ${
@@ -250,17 +243,7 @@ const App = () => {
         content: cleanInstructions(
           msg.content,
           instructions,
-          `The user is asking about ${
-            appMode === "undocumented"
-              ? "law & enforcement"
-              : appMode === "fafsa"
-              ? "financing college or higher education"
-              : appMode === "resume"
-              ? "improving their job prospects"
-              : appMode === "counselor"
-              ? "navigating college"
-              : ""
-          }`
+          prefixMap[appMode]
         ),
         original: promptText, // Store the original user message
         role: msg.role,
@@ -268,17 +251,7 @@ const App = () => {
         userMsg: cleanInstructions(
           userMsg?.content,
           instructions,
-          `The user is asking about ${
-            appMode === "undocumented"
-              ? "law & enforcement"
-              : appMode === "fafsa"
-              ? "financing college or higher education"
-              : appMode === "resume"
-              ? "improving their job prospects"
-              : appMode === "counselor"
-              ? "navigating college"
-              : ""
-          }`
+          prefixMap[appMode]
         ),
       });
 
@@ -469,9 +442,13 @@ const App = () => {
                     {" "}
                     {lang[language][`title.resume`]}
                   </Dropdown.Item>
-                  <Dropdown.Item eventKey="counselor">
+                  <Dropdown.Item eventKey="counsfelor">
                     {" "}
                     {lang[language][`title.counselor`]}
+                  </Dropdown.Item>
+
+                  <Dropdown.Item eventKey="career">
+                    {lang[language]["title.career"] || "Career Agent"}
                   </Dropdown.Item>
                 </Dropdown.Menu>
               </Dropdown>
@@ -514,6 +491,40 @@ const App = () => {
               </Button>
             </>
           ) : null}
+
+          {appMode === "career" && (
+            <div style={{ marginTop: 24 }}>
+              <CareerAgentWizard
+                local_npub={local_npub}
+                language={language}
+                onComplete={(careerData) => {
+                  // Combine user data into an AI prompt
+                  const combinedPitch = `
+          Here is the user's draft elevator pitch and relevant info:
+          Basic Info: ${JSON.stringify(careerData.basicInfo)}
+          Core Competencies: ${JSON.stringify(careerData.coreCompetencies)}
+          Draft Elevator Pitch: ${JSON.stringify(careerData.pitch)}
+
+          Please provide concise feedback or suggestions for improving clarity, tone, and completeness of this pitch.
+        `;
+
+                  const docRef = doc(database, "users", local_npub);
+                  const careerCollectionRef = collection(docRef, "careerData");
+                  addDoc(careerCollectionRef, {
+                    careerData,
+                    timestamp: new Date().toISOString(),
+                  });
+                  // Then you can call your existing chat function
+                  submitPrompt([
+                    {
+                      role: "user",
+                      content: combinedPitch,
+                    },
+                  ]);
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {messages.length < 1 ? (
@@ -570,15 +581,7 @@ const App = () => {
                         {cleanInstructions(
                           msg.content,
                           promptSet[appMode],
-                          appMode === "undocumented"
-                            ? `The user is asking about law & enforcement in ${user.state}`
-                            : appMode === "fafsa"
-                            ? `The user is asking about financing college or higher education in ${user.state}`
-                            : appMode === "resume"
-                            ? `The user is asking about improving their job prospects in ${user.state}`
-                            : appMode === "counselor"
-                            ? `The user is asking about navigating college in ${user.state}`
-                            : "",
+                          `${prefixMap[appMode]} in ${user.state}`,
                           true
                         )}
                       </Markdown>

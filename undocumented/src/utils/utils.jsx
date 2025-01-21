@@ -27,29 +27,64 @@ export const isUnsupportedBrowser = () => {
   // return true;
 };
 
-const cleanInstructions = (
-  input,
-  instructions,
-  statePrefix,
-  mustCleanAll = false
-) => {
-  const languagePrefixPattern =
-    /^(The user wants you speaking in spanish|The user wants you communicating in english)\s*/;
-
-  // Escape special characters in statePrefix for use in regex
-  const statePrefixPattern = new RegExp(`^${statePrefix}\\s*`);
-
-  return input
-    .replace(promptSet["undocumented"], "")
-    .replace(promptSet["resume"], "")
-    .replace(promptSet["fafsa"], "")
-    .replace(promptSet["counselor"], "")
-    .replace(languagePrefixPattern, "")
-    ?.replace(statePrefixPattern, "")
-    .trim();
+export const prefixMap = {
+  undocumented: "The user is asking about law & enforcement",
+  fafsa: "The user is asking about financing college or higher education",
+  resume: "The user is asking about improving their job prospects",
+  counselor: "The user is asking about navigating college",
+  career: "The user is asking about career and candidacy development",
+  // "career": "drafting elevator pitches" // if desired
 };
 
-export { cleanInstructions };
+// if you have a default or fallback
+const DEFAULT_PREFIX = "law & enforcement";
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function cleanInstructions(
+  input,
+  currentInstructions,
+  statePrefix,
+  mustCleanAll = false
+) {
+  if (!input) return "";
+
+  let output = input;
+
+  // 1) Create an array of prompts we want to remove.
+  // If mustCleanAll is true, remove references to every promptSet. Otherwise just remove the current instructions.
+  const allPrompts = Object.values(promptSet); // e.g. [promptSet["undocumented"], promptSet["resume"], ...]
+  const promptsToRemove = mustCleanAll ? allPrompts : [currentInstructions];
+
+  // 2) Also remove any leftover text from the known prompt sets that might appear
+  //    (in case the user was on multiple modes, or the AI references them).
+  for (const promptText of promptsToRemove) {
+    if (!promptText) continue;
+    const escaped = escapeRegex(promptText);
+    const regex = new RegExp(escaped, "g");
+    output = output.replace(regex, "");
+  }
+
+  // 3) Language prefix removal:
+  //    e.g., "The user wants you speaking in spanish" or "The user wants you communicating in english"
+  const languagePrefixPattern =
+    /^(The user wants you speaking in spanish|The user wants you communicating in english)\s*/i;
+  output = output.replace(languagePrefixPattern, "");
+
+  // 4) State prefix removal, if we have a valid string
+  if (statePrefix && statePrefix.trim().length > 0) {
+    // Escape special regex chars in statePrefix
+    const escapedState = escapeRegex(statePrefix);
+    const statePrefixPattern = new RegExp(`^${escapedState}\\s*`, "i");
+    output = output.replace(statePrefixPattern, "");
+  }
+
+  // 5) Final cleanup: remove extra whitespace or newlines if desired
+  output = output.replace(/\s\s+/g, " ").trim();
+
+  return output;
+}
 
 export const lang = {
   en: {
