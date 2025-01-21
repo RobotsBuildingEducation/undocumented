@@ -43,6 +43,7 @@ const cleanInstructions = (
     .replace(promptSet["undocumented"], "")
     .replace(promptSet["resume"], "")
     .replace(promptSet["fafsa"], "")
+    .replace(promptSet["counselor"], "")
     .replace(languagePrefixPattern, "")
     ?.replace(statePrefixPattern, "")
     .trim();
@@ -114,6 +115,9 @@ For undocumented individuals, the Fourteenth Amendment is a critical safeguard. 
     ["title.resume"]: "Smart Resume",
     ["subtitle.resume"]:
       "Job application resume support with intelligent assistance",
+    ["title.counselor"]: "College Counselor",
+    ["subtitle.counselor"]:
+      "Navigate college with the support of intelligent assistance",
     messagePlaceholder: "Message",
     saveResponse: "Save response",
     languageSwitch: "English",
@@ -149,6 +153,9 @@ For undocumented individuals, the Fourteenth Amendment is a critical safeguard. 
     savedButton: "Saved",
   },
   es: {
+    ["title.counselor"]: "Consejero Universitario",
+    ["subtitle.counselor"]:
+      "Navega la universidad con el apoyo de una asistencia inteligente",
     "emptyChatInstructions.resume": (
       <div>
         ¡Escribe un mensaje y nuestra IA te ayudará a aprender más! La

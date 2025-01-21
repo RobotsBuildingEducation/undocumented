@@ -130,6 +130,10 @@ const App = () => {
           ? "law & enforcement"
           : appMode === "fafsa"
           ? "financing college or higher education"
+          : appMode === "resume"
+          ? "improving their job prospects"
+          : appMode === "counselor"
+          ? "navigating college"
           : ""
       } in ${user.state}`;
       await submitPrompt([
@@ -251,6 +255,10 @@ const App = () => {
               ? "law & enforcement"
               : appMode === "fafsa"
               ? "financing college or higher education"
+              : appMode === "resume"
+              ? "improving their job prospects"
+              : appMode === "counselor"
+              ? "navigating college"
               : ""
           }`
         ),
@@ -265,6 +273,10 @@ const App = () => {
               ? "law & enforcement"
               : appMode === "fafsa"
               ? "financing college or higher education"
+              : appMode === "resume"
+              ? "improving their job prospects"
+              : appMode === "counselor"
+              ? "navigating college"
               : ""
           }`
         ),
@@ -457,6 +469,10 @@ const App = () => {
                     {" "}
                     {lang[language][`title.resume`]}
                   </Dropdown.Item>
+                  <Dropdown.Item eventKey="counselor">
+                    {" "}
+                    {lang[language][`title.counselor`]}
+                  </Dropdown.Item>
                 </Dropdown.Menu>
               </Dropdown>
             </Form>
@@ -558,6 +574,10 @@ const App = () => {
                             ? `The user is asking about law & enforcement in ${user.state}`
                             : appMode === "fafsa"
                             ? `The user is asking about financing college or higher education in ${user.state}`
+                            : appMode === "resume"
+                            ? `The user is asking about improving their job prospects in ${user.state}`
+                            : appMode === "counselor"
+                            ? `The user is asking about navigating college in ${user.state}`
                             : "",
                           true
                         )}
@@ -768,7 +788,9 @@ const App = () => {
                   ? lang[language][`title.undocumented`]
                   : appMode === "fafsa"
                   ? lang[language][`title.fafsa`]
-                  : lang[language][`title.resume`]}
+                  : appMode === "resume"
+                  ? lang[language][`title.resume`]
+                  : lang[language][`title.counselor`]}
               </Dropdown.Toggle>
 
               <Dropdown.Menu>
@@ -782,6 +804,10 @@ const App = () => {
                 <Dropdown.Item eventKey="resume">
                   {" "}
                   {lang[language][`title.resume`]}
+                </Dropdown.Item>
+                <Dropdown.Item eventKey="counselor">
+                  {" "}
+                  {lang[language][`title.counselor`]}
                 </Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>
