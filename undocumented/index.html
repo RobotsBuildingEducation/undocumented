@@ -32,10 +32,72 @@
   <meta name="twitter:creator:id" content="juanZLPO">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Undocumented</title>
+
+  <!-- <style>
+    /* Basic styling for our custom menu */
+    #customMenu {
+      position: absolute;
+      display: none;
+      background-color: #ffffff;
+      border: 1px solid #ccc;
+      min-width: 150px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+      z-index: 9999;
+      /* Make sure it's above other elements */
+      padding: 0.5em 0;
+    }
+
+    #customMenu ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    #customMenu li {
+      padding: 0.5em 1em;
+      cursor: pointer;
+    }
+
+    #customMenu li:hover {
+      background-color: #ddd;
+    }
+  </style> -->
 </head>
 
 <body>
   <div id="root"></div>
+  <!-- <div id="customMenu">
+    <ul>
+      <li onclick="handleAction('Action 1')">Action 1</li>
+      <li onclick="handleAction('Action 2')">Action 2</li>
+      <li onclick="handleAction('Action 3')">Action 3</li>
+    </ul>
+  </div>
+
+  <script>
+    const customMenu = document.getElementById('customMenu');
+
+    // Hide default context menu
+    document.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+      
+      // Show our custom menu at the mouse position
+      customMenu.style.top = `${event.pageY}px`;
+      customMenu.style.left = `${event.pageX}px`;
+      customMenu.style.display = 'block';
+    });
+
+    // Hide the custom menu on left-click anywhere
+    document.addEventListener('click', () => {
+      customMenu.style.display = 'none';
+    });
+
+    function handleAction(action) {
+      console.log(`You selected: ${action}`);
+      // Hide menu after an action
+      customMenu.style.display = 'none';
+    }
+  </script> -->
   <script type="module" src="/src/main.jsx"></script>
 </body>
 

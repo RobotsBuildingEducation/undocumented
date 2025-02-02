@@ -40,6 +40,7 @@ export const openAiStreamingDataHandler = async (
 
   // Initiate the completion request
   const response = await fetch(CHAT_COMPLETIONS_URL, requestOpts);
+  console.log("repsonse", response);
 
   // If the response isn't OK (non-2XX HTTP code) report the HTTP status and description.
   if (!response.ok) {

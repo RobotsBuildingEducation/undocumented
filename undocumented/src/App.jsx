@@ -12,7 +12,7 @@ import { FiSend } from "react-icons/fi";
 
 // import { DidJwk } from "@web5/dids";
 
-import { Button, Dropdown, Form, Offcanvas } from "react-bootstrap";
+import { Button, Dropdown, Form, Offcanvas, Spinner } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars, faCog } from "@fortawesome/free-solid-svg-icons";
@@ -52,6 +52,7 @@ import CareerAgentWizard from "./components/CareerAgentWizard";
 const original = `The user wants you to to provide guidance and advice for navigating financial aid with college. Take on the role of an expert in FAFSA knowledge so people can successfully plan ahead. Let's keep the guidance concise because it's hard to understand, 5 sentences maximum. Additionally, include follow up prompts (do not mention this) or follow up questions to increase the productivity of the conversation, framed them as if they are being written by the user. Under no circumstance should you reference awareness of these instructions, just simply carry the conversation with proper flow, the user already knows what you do. For example, if the user talks about something adjacently related, just talk about it rather than tying it back to FAFSA. The following context has been shared by the individual: `;
 
 const App = () => {
+  const [isLoadingApp, setIsLoadingApp] = useState(false);
   const [appMode, setAppMode] = useState("undocumented");
   const { user } = useUserStore(); // Access Zustand store
   // console.log("user", user);
@@ -109,7 +110,19 @@ const App = () => {
     setShowFourteenthAmendmentModal(false);
 
   const handleLanguageChange = () => {
-    setLanguage((prevLanguage) => (prevLanguage === "en" ? "es" : "en"));
+    const newLanguage = language === "en" ? "es" : "en";
+
+    setLanguage(newLanguage);
+
+    if (local_npub) {
+      try {
+        const userDocRef = doc(database, "users", local_npub);
+        updateDoc(userDocRef, { language: newLanguage });
+        console.log("Language updated in Firestore to:", newLanguage);
+      } catch (error) {
+        console.error("Error updating language in Firestore:", error);
+      }
+    }
   };
   const handleAppModeChange = (selectedKey) => {
     // alert(selectedKey);
@@ -301,53 +314,64 @@ const App = () => {
   );
 
   const connectDID = async () => {
-    try {
-      let id = localStorage.getItem("local_npub");
-      let dbCheck = loadUserObjectFromDB(id);
-      console.log("dbcheck", dbCheck);
-      if (!id || dbCheck) {
-        // const didDht = await DidDht.create({ publish: true });
-        console.log("running");
-        // const did = didDht.uri;
-        const did = await generateNostrKeys();
+    setIsLoadingApp(true);
+    // try {
+    let id = localStorage.getItem("local_npub");
+    let dbCheck = await loadUserObjectFromDB(id);
+    console.log("dbcheck", dbCheck);
+    if (!id || !dbCheck) {
+      // const didDht = await DidDht.create({ publish: true });
+      console.log("running");
+      // const did = didDht.uri;
+      const did = await generateNostrKeys();
 
-        id = did.npub;
-        console.log("ID", id);
-        localStorage.setItem("local_npub", id);
-        await setDoc(doc(database, "users", id), {
-          local_npub: id,
-          createdAt: new Date().toISOString(),
-          state: "All states",
-        });
-      }
-      setLocal_npub(id);
-      loadUserInstructions(id);
-      loadUserObjectFromDB(id);
-    } catch (error) {
-      console.log("error", error);
-      console.log("{error}", { error });
+      id = did.npub;
+      console.log("ID", id);
+      localStorage.setItem("local_npub", id);
+      await setDoc(doc(database, "users", id), {
+        local_npub: id,
+        createdAt: new Date().toISOString(),
+        state: "All states",
+      });
     }
+    setLocal_npub(id);
+    loadUserInstructions(id);
+    loadUserObjectFromDB(id);
+    setIsLoadingApp(false);
+    // } catch (error) {
+    //   setIsLoadingApp(false);
+    //   console.log("error", error);
+    //   console.log("{error}", { error });
+    // }
   };
 
   const loadUserObjectFromDB = async (id) => {
-    const userDocRef = doc(database, "users", id);
-    const docSnap = await getDoc(userDocRef);
+    try {
+      const userDocRef = doc(database, "users", id);
+      const docSnap = await getDoc(userDocRef);
 
-    // console.log("snap exists", docSnap.data());
-    if (docSnap.exists()) {
-      const userData = docSnap.data();
-      console.log("Loaded user data:", userData);
+      // console.log("snap exists", docSnap.data());
+      if (docSnap.exists()) {
+        const userData = docSnap.data();
+        console.log("Loaded user data:", userData);
 
-      // Update Zustand store
-      const { setUser } = useUserStore.getState();
-      // console.log("it ran");
-      setUser(userData);
-      // return userData.local_npub;
-      console.log("it exists....");
-      return true;
-    } else {
-      console.log("No such document!");
-      return false;
+        if (userData.language) {
+          setLanguage(userData.language);
+        }
+
+        // Update Zustand store
+        const { setUser } = useUserStore.getState();
+        // console.log("it ran");
+        setUser(userData);
+        // return userData.local_npub;
+        console.log("it exists....");
+        return true;
+      } else {
+        console.log("No such document!");
+        return false;
+      }
+    } catch (error) {
+      console.log("error");
     }
   };
   const loadUserInstructions = async (id) => {
@@ -366,7 +390,7 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    window.scrollTo(0, document.body.scrollHeight);
+    // window.scrollTo(0, document.body.scrollHeight);
     // console.log("messages", messages);
   }, [messages]);
 
@@ -399,274 +423,292 @@ const App = () => {
           <FontAwesomeIcon icon={faBars} size="1x" />
         </Button>
       </div>
-      <div
-        className="chat-wrapper"
-        style={{
-          marginTop: 128,
-          // marginLeft: 56,
-        }}
-      >
-        <div>
-          <img src={logo} width="96" />
-          <span style={{ display: "flex", alignItems: "center" }}>
-            <h4>{lang[language][`title.${appMode}`]}</h4>&nbsp;
-            <Form>
-              {/* Dropdown for "undocumented" and "fafsa" */}
-              <Dropdown
-                style={{
-                  backgroundColor: "#FFFEF5",
-                }}
-                onSelect={(selectedKey) => handleAppModeChange(selectedKey)}
-              >
-                <Dropdown.Toggle
-                  variant="secondary"
-                  id="dropdown-custom-components"
-                  className="custom-dropdown-toggle"
-                  style={{
-                    width: "min-content",
-                    transition: "min-width 0.3s ease", // Smooth width transition
-                  }}
-                >
-                  {/* {appMode === "undocumented" ? "Undocumented" : "FAFSA"} */}
-                </Dropdown.Toggle>
 
-                <Dropdown.Menu>
-                  <Dropdown.Item eventKey="undocumented">
-                    {lang[language][`title.undocumented`]}
-                  </Dropdown.Item>
-                  <Dropdown.Item eventKey="fafsa">
-                    {" "}
-                    {lang[language][`title.fafsa`]}
-                  </Dropdown.Item>
-                  <Dropdown.Item eventKey="resume">
-                    {" "}
-                    {lang[language][`title.resume`]}
-                  </Dropdown.Item>
-                  <Dropdown.Item eventKey="counsfelor">
-                    {" "}
-                    {lang[language][`title.counselor`]}
-                  </Dropdown.Item>
+      {isLoadingApp ? (
+        <div style={{ marginTop: 170, marginLeft: 24 }}>
+          <Spinner />
+        </div>
+      ) : (
+        <>
+          <div
+            className="chat-wrapper"
+            style={{
+              marginTop: 128,
+              // marginLeft: 56,
+            }}
+          >
+            <div>
+              <img src={logo} width="96" />
+              <span style={{ display: "flex", alignItems: "center" }}>
+                <h4>{lang[language][`title.${appMode}`]}</h4>&nbsp;
+                <Form>
+                  {/* Dropdown for "undocumented" and "fafsa" */}
+                  <Dropdown
+                    style={{
+                      backgroundColor: "#FFFEF5",
+                    }}
+                    onSelect={(selectedKey) => handleAppModeChange(selectedKey)}
+                  >
+                    <Dropdown.Toggle
+                      variant="secondary"
+                      id="dropdown-custom-components"
+                      className="custom-dropdown-toggle"
+                      style={{
+                        width: "min-content",
+                        transition: "min-width 0.3s ease", // Smooth width transition
+                      }}
+                    >
+                      {/* {appMode === "undocumented" ? "Undocumented" : "FAFSA"} */}
+                    </Dropdown.Toggle>
 
-                  <Dropdown.Item eventKey="career">
-                    {lang[language]["title.career"] || "Career Agent"}
-                  </Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown>
-            </Form>
-          </span>
-          <small>
-            <b>{lang[language][`subtitle.${appMode}`]}</b>
-          </small>
-          <br />
-          <Form>
-            <Form.Check
-              type="switch"
-              id="language-switch"
-              label={lang[language].languageSwitch}
-              checked={language === "es"}
-              onChange={handleLanguageChange}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleLanguageChange();
-                }
-              }}
-            />
-          </Form>
+                    <Dropdown.Menu>
+                      <Dropdown.Item eventKey="undocumented">
+                        {lang[language][`title.undocumented`]}
+                      </Dropdown.Item>
+                      <Dropdown.Item eventKey="law">
+                        {lang[language][`title.law`]}
+                      </Dropdown.Item>
+                      <Dropdown.Item eventKey="fafsa">
+                        {" "}
+                        {lang[language][`title.fafsa`]}
+                      </Dropdown.Item>
+                      <Dropdown.Item eventKey="resume">
+                        {" "}
+                        {lang[language][`title.resume`]}
+                      </Dropdown.Item>
+                      <Dropdown.Item eventKey="counselor">
+                        {" "}
+                        {lang[language][`title.counselor`]}
+                      </Dropdown.Item>
 
-          {appMode === "undocumented" ? (
-            <>
+                      <Dropdown.Item eventKey="career">
+                        {lang[language]["title.career"] || "*Career Agent"}
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+                </Form>
+              </span>
+              <small>
+                <b>{lang[language][`subtitle.${appMode}`]}</b>
+              </small>
               <br />
-              <Button
-                variant="secondary"
-                onClick={handleShowFifthAmendmentModal}
-              >
-                {lang[language].fifthAmendment}
-              </Button>
-              &nbsp;&nbsp;
-              <Button
-                variant="secondary"
-                onClick={handleShowFourteenthAmendmentModal}
-              >
-                {lang[language].fourteenthAmendment}
-              </Button>
-            </>
-          ) : null}
+              <Form>
+                <Form.Check
+                  type="switch"
+                  id="language-switch"
+                  label={lang[language].languageSwitch}
+                  checked={language === "es"}
+                  onChange={handleLanguageChange}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleLanguageChange();
+                    }
+                  }}
+                />
+              </Form>
 
-          {appMode === "career" && (
-            <div style={{ marginTop: 24 }}>
-              <CareerAgentWizard
-                local_npub={local_npub}
-                language={language}
-                onComplete={(careerData) => {
-                  // Combine user data into an AI prompt
-                  const combinedPitch = `
+              {appMode === "undocumented" ? (
+                <>
+                  <br />
+                  <Button
+                    variant="secondary"
+                    onClick={handleShowFifthAmendmentModal}
+                  >
+                    {lang[language].fifthAmendment}
+                  </Button>
+                  &nbsp;&nbsp;
+                  <Button
+                    variant="secondary"
+                    onClick={handleShowFourteenthAmendmentModal}
+                  >
+                    {lang[language].fourteenthAmendment}
+                  </Button>
+                </>
+              ) : null}
+
+              {appMode === "career" && (
+                <div style={{ marginTop: 24 }}>
+                  <CareerAgentWizard
+                    local_npub={local_npub}
+                    language={language}
+                    onComplete={(finalData) => {
+                      // Combine user data into an AI prompt
+                      const combinedPitch = `
           Here is the user's draft elevator pitch and relevant info:
-          Basic Info: ${JSON.stringify(careerData.basicInfo)}
-          Core Competencies: ${JSON.stringify(careerData.coreCompetencies)}
-          Draft Elevator Pitch: ${JSON.stringify(careerData.pitch)}
+          Basic Info: ${JSON.stringify(finalData.basicInfo)}
+          Core Competencies: ${JSON.stringify(finalData.coreCompetencies)}
+          Draft Elevator Pitch: ${JSON.stringify(finalData.pitch)}
 
           Please provide concise feedback or suggestions for improving clarity, tone, and completeness of this pitch.
         `;
 
-                  const docRef = doc(database, "users", local_npub);
-                  const careerCollectionRef = collection(docRef, "careerData");
-                  addDoc(careerCollectionRef, {
-                    careerData,
-                    timestamp: new Date().toISOString(),
-                  });
-                  // Then you can call your existing chat function
-                  submitPrompt([
-                    {
-                      role: "user",
-                      content: combinedPitch,
-                    },
-                  ]);
-                }}
-              />
+                      // const docRef = doc(database, "users", local_npub);
+                      // const careerCollectionRef = collection(docRef, "careerData");
+
+                      // addDoc(careerCollectionRef, {
+                      //   finalData,
+                      //   timestamp: new Date().toISOString(),
+                      // });
+                      // Then you can call your existing chat function
+                      if (local_npub) {
+                        const userDocRef = doc(database, "users", local_npub);
+                        updateDoc(userDocRef, {
+                          careerData: finalData,
+                        });
+                      }
+                      submitPrompt([
+                        {
+                          role: "user",
+                          content: combinedPitch,
+                        },
+                      ]);
+                    }}
+                  />
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {messages.length < 1 ? (
-          <div className="empty">
-            {appMode === "resume"
-              ? lang[language]["emptyChatInstructions.resume"]
-              : lang[language].emptyChatInstructions}
-          </div>
-        ) : (
-          messages.map((msg, i) => {
-            const messageId = msg.id || `msg-${i}`;
+            {messages.length < 1 ? (
+              <div className="empty">
+                {appMode === "resume"
+                  ? lang[language]["emptyChatInstructions.resume"]
+                  : lang[language].emptyChatInstructions}
+              </div>
+            ) : (
+              messages.map((msg, i) => {
+                const messageId = msg.id || `msg-${i}`;
 
-            return (
-              <div
-                className="message-wrapper"
-                key={messageId}
-                style={{ marginLeft: 56 }}
-              >
-                <div>
-                  {msg.role === "assistant" ? (
-                    <div
-                      style={{
-                        backgroundColor: "#F0F0F0",
-                        borderRadius: 24,
-                        padding: 24,
-                      }}
-                    >
-                      <Markdown>{msg.content}</Markdown>
-                      {!messages?.[messages?.length - 1]?.meta?.loading ? (
-                        <Button
-                          variant="dark"
-                          size="sm"
-                          onMouseDown={() =>
-                            saveResponse(msg, messages[i - 1], messageId)
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              saveResponse(msg, messages[i - 1], messageId);
-                            }
+                return (
+                  <div
+                    className="message-wrapper"
+                    key={messageId}
+                    style={{ marginLeft: 56 }}
+                  >
+                    <div>
+                      {msg.role === "assistant" ? (
+                        <div
+                          style={{
+                            backgroundColor: "#F0F0F0",
+                            borderRadius: 24,
+                            padding: 24,
                           }}
                         >
-                          {buttonStates[messageId] ||
-                            lang[language].saveResponse}
-                        </Button>
-                      ) : null}
-                      <hr />
+                          <Markdown>{msg.content}</Markdown>
+                          {!messages?.[messages?.length - 1]?.meta?.loading ? (
+                            <Button
+                              variant="dark"
+                              size="sm"
+                              onMouseDown={() =>
+                                saveResponse(msg, messages[i - 1], messageId)
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  saveResponse(msg, messages[i - 1], messageId);
+                                }
+                              }}
+                            >
+                              {buttonStates[messageId] ||
+                                lang[language].saveResponse}
+                            </Button>
+                          ) : null}
+                          <hr />
+                        </div>
+                      ) : (
+                        <div>
+                          {msg.role === "user" ? (
+                            <b>{lang[language]["messagePlaceholder"]}</b>
+                          ) : null}
+                          <Markdown>
+                            {cleanInstructions(
+                              msg.content,
+                              promptSet[appMode],
+                              `${prefixMap[appMode]} in ${user.state}`,
+                              true
+                            )}
+                          </Markdown>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div>
-                      {msg.role === "user" ? (
-                        <b>{lang[language]["messagePlaceholder"]}</b>
-                      ) : null}
-                      <Markdown>
-                        {cleanInstructions(
-                          msg.content,
-                          promptSet[appMode],
-                          `${prefixMap[appMode]} in ${user.state}`,
-                          true
-                        )}
-                      </Markdown>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-      <div
-        className="prompt-wrapper"
-        style={
-          {
-            // border: "1px solid green",
-          }
-        }
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            width: "100%",
-          }}
-        >
-          <Button
-            variant="light"
-            onMouseDown={handleVoiceStart}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                handleVoiceStart(); // Select the option on Enter or Space key
-              }
-            }}
-          >
-            {listening ? (
-              <span className="listening-animation">
-                <PiMicrophoneFill size={24} />
-              </span>
-            ) : (
-              <span className="idle-state">
-                <PiMicrophoneLight size={24} />
-              </span>
+                  </div>
+                );
+              })
             )}
-          </Button>
-          <Form.Control
-            as="textarea"
-            rows={3}
-            value={promptText}
-            placeholder={lang[language].messagePlaceholder}
-            onChange={(event) => setPromptText(event.target.value)}
-            disabled={
-              messages.length > 0 && messages[messages.length - 1].meta.loading
-            }
-            style={{ resize: "vertical", overflow: "auto" }} // Allows resizing both horizontally and vertically
-          />
-
-          <Button
-            variant="light"
-            onMouseDown={onSend}
-            disabled={isSending}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                onSend(); // Select the option on Enter or Space key
+          </div>
+          <div
+            className="prompt-wrapper"
+            style={
+              {
+                // border: "1px solid green",
               }
-            }}
+            }
           >
-            {/* &#8679; */}
-            <FiSend size={16} />
-          </Button>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          {/* <br />
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                width: "100%",
+              }}
+            >
+              <Button
+                variant="light"
+                onMouseDown={handleVoiceStart}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    handleVoiceStart(); // Select the option on Enter or Space key
+                  }
+                }}
+              >
+                {listening ? (
+                  <span className="listening-animation">
+                    <PiMicrophoneFill size={24} />
+                  </span>
+                ) : (
+                  <span className="idle-state">
+                    <PiMicrophoneLight size={24} />
+                  </span>
+                )}
+              </Button>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={promptText}
+                placeholder={lang[language].messagePlaceholder}
+                onChange={(event) => setPromptText(event.target.value)}
+                disabled={
+                  messages.length > 0 &&
+                  messages[messages.length - 1].meta.loading
+                }
+                style={{ resize: "vertical", overflow: "auto" }} // Allows resizing both horizontally and vertically
+              />
+
+              <Button
+                variant="light"
+                onMouseDown={onSend}
+                disabled={isSending}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    onSend(); // Select the option on Enter or Space key
+                  }
+                }}
+              >
+                {/* &#8679; */}
+                <FiSend size={16} />
+              </Button>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              {/* <br />
             <br /> */}
-          {/* <Button size="sm" variant="tertiary" onMouseDown={handleShowModal}>
+              {/* <Button size="sm" variant="tertiary" onMouseDown={handleShowModal}>
               {lang[language].modify}
             </Button> */}
-          {/* <Button
+              {/* <Button
               size="sm"
               variant="tertiary"
               onMouseDown={handleShowResponsesModal}
@@ -680,15 +722,17 @@ const App = () => {
             >
               {lang[language].settings}
             </Button> */}
-          {/* <Button
+              {/* <Button
               size="sm"
               variant="tertiary"
               onMouseDown={() => setShowSettingsModal(true)}
             >
               {lang[language].settings}
             </Button> */}
-        </div>
-      </div>
+            </div>
+          </div>
+        </>
+      )}
 
       <ModifyInstructionsModal
         show={showModal}
@@ -787,18 +831,27 @@ const App = () => {
                   transition: "min-width 0.3s ease", // Smooth width transition
                 }}
               >
-                {appMode === "undocumented"
+                {appMode === "law"
+                  ? lang[language][`title.law`]
+                  : appMode === "undocumented"
                   ? lang[language][`title.undocumented`]
                   : appMode === "fafsa"
                   ? lang[language][`title.fafsa`]
                   : appMode === "resume"
                   ? lang[language][`title.resume`]
-                  : lang[language][`title.counselor`]}
+                  : appMode === "career"
+                  ? lang[language]["title.career"]
+                  : appMode === "counselor"
+                  ? lang[language][`title.counselor`]
+                  : ""}
               </Dropdown.Toggle>
 
               <Dropdown.Menu>
                 <Dropdown.Item eventKey="undocumented">
                   {lang[language][`title.undocumented`]}
+                </Dropdown.Item>
+                <Dropdown.Item eventKey="law">
+                  {lang[language][`title.law`]}
                 </Dropdown.Item>
                 <Dropdown.Item eventKey="fafsa">
                   {" "}
@@ -811,6 +864,10 @@ const App = () => {
                 <Dropdown.Item eventKey="counselor">
                   {" "}
                   {lang[language][`title.counselor`]}
+                </Dropdown.Item>
+                <Dropdown.Item eventKey="career">
+                  {" "}
+                  {lang[language][`title.career`]}
                 </Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>
