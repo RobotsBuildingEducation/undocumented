@@ -12,7 +12,7 @@ import {
 } from "react-bootstrap";
 import { database } from "../database/setup";
 
-const CareerAgentWizard = ({ language, local_npub, onComplete }) => {
+const CareerAgentWizard = ({ language, local_npub, onComplete, onUpdate }) => {
   const [canEdit, setCanEdit] = useState(false);
   // Steps: 1) Basic Info, 2) Core Competencies, 3) Elevator Pitch, 4) Review
   const [step, setStep] = useState(1);
@@ -40,6 +40,7 @@ const CareerAgentWizard = ({ language, local_npub, onComplete }) => {
   });
 
   // --- 1) Load existing careerData from the user's doc
+
   useEffect(() => {
     if (!local_npub) return;
 
@@ -71,9 +72,23 @@ const CareerAgentWizard = ({ language, local_npub, onComplete }) => {
     fetchCareerData();
   }, [local_npub]);
 
-  // Move to next/previous step
-  const handleNext = () => setStep((s) => s + 1);
-  const handlePrev = () => setStep((s) => s - 1);
+  // When moving to the next step, update the preview:
+  const handleNext = () => {
+    const compiled = { basicInfo, coreCompetencies, pitch };
+    if (onUpdate) {
+      onUpdate(compiled);
+    }
+    setStep((s) => s + 1);
+  };
+
+  // Similarly, if you allow “Previous” to update:
+  const handlePrev = () => {
+    const compiled = { basicInfo, coreCompetencies, pitch };
+    if (onUpdate) {
+      onUpdate(compiled);
+    }
+    setStep((s) => s - 1);
+  };
 
   // --- 2) On Finish: compile data + update Firestore + call onComplete
   const handleFinish = async () => {

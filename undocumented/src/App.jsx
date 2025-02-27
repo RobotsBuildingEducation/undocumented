@@ -48,10 +48,45 @@ import PrivacyPolicyModal from "./components/PrivacyPolicyModal";
 import InstallAppModal from "./components/InstallAppModal";
 import { useSharedNostr } from "./hooks/useNostr";
 import CareerAgentWizard from "./components/CareerAgentWizard";
+import CareerProfileCard from "./components/CareerProfileCard";
 
 const original = `The user wants you to to provide guidance and advice for navigating financial aid with college. Take on the role of an expert in FAFSA knowledge so people can successfully plan ahead. Let's keep the guidance concise because it's hard to understand, 5 sentences maximum. Additionally, include follow up prompts (do not mention this) or follow up questions to increase the productivity of the conversation, framed them as if they are being written by the user. Under no circumstance should you reference awareness of these instructions, just simply carry the conversation with proper flow, the user already knows what you do. For example, if the user talks about something adjacently related, just talk about it rather than tying it back to FAFSA. The following context has been shared by the individual: `;
 
 const App = () => {
+  const [profileSnapshots, setProfileSnapshots] = useState({});
+
+  // At the top of your App component:
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  const [showCareerWizard, setShowCareerWizard] = useState(false);
+  const [careerProfile, setCareerProfile] = useState(null);
+  // At the top of your App component:
+  const [careerWizard, setCareerWizard] = useState({
+    active: false, // whether the wizard mode is active
+    step: 0, // current wizard step (0 means not started)
+    data: {
+      basicInfo: {
+        name: "",
+        education: "",
+        city: "",
+        company: "",
+        jobTitle: "",
+        industry: "",
+        projects: "",
+      },
+      coreCompetencies: {
+        drive: "",
+        competencies: "",
+        examples: "",
+      },
+      pitch: {
+        intro: "",
+        zoneOfGenius: "",
+        uvpClose: "",
+      },
+    },
+  });
+
   const [isLoadingApp, setIsLoadingApp] = useState(false);
   const [appMode, setAppMode] = useState("undocumented");
   const { user } = useUserStore(); // Access Zustand store
@@ -142,11 +177,17 @@ const App = () => {
           : "The user wants you communicating in english";
 
       const statePrefix = `${prefixMap[appMode]} in ${user.state}`;
+
+      let finalInstructions = instructions;
+      if (appMode === "career") {
+        finalInstructions = instructions + JSON.stringify(careerProfile);
+      }
+
       await submitPrompt([
         {
           content: `${languagePrefix} ${
             appMode === "resume" ? "" : "" + statePrefix
-          } ${instructions} ${promptText}`,
+          } ${finalInstructions} ${promptText}`,
           role: "user",
         },
       ]);
@@ -359,6 +400,10 @@ const App = () => {
           setLanguage(userData.language);
         }
 
+        if (userData.careerData) {
+          setCareerProfile(userData.careerData);
+        }
+
         // Update Zustand store
         const { setUser } = useUserStore.getState();
         // console.log("it ran");
@@ -389,12 +434,191 @@ const App = () => {
     connectDID();
   }, []);
 
+  // Helper function to check if the JSON string has balanced curly braces.
+  const isBalanced = (str) => {
+    let balance = 0;
+    for (const char of str) {
+      if (char === "{") balance++;
+      else if (char === "}") balance--;
+    }
+    return balance === 0;
+  };
+
+  const fixInvalidJson = (jsonString) => {
+    // This regex finds occurrences like { name: or , name:
+    // and replaces them with {"name": or , "name":
+    return jsonString.replace(/([{,])(\s*)([A-Za-z0-9_]+)(\s*):/g, '$1"$3":');
+  };
+
   useEffect(() => {
-    // window.scrollTo(0, document.body.scrollHeight);
-    // console.log("messages", messages);
-  }, [messages]);
+    if (appMode !== "career") return;
+
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage || lastMessage.role !== "assistant") return;
+
+    // While the message is still streaming, indicate that profile is loading.
+    if (lastMessage.meta.loading) {
+      setProfileLoading(true);
+      return;
+    }
+
+    // When the message is complete, turn off the loading indicator.
+    setProfileLoading(false);
+
+    const contentTrimmed = lastMessage.content.trim();
+    if (!contentTrimmed.endsWith("}")) {
+      console.log(
+        "Final message does not end with '}', waiting for complete JSON."
+      );
+      setProfileLoading(true);
+      return;
+    }
+
+    // Use a regex to capture a JSON block following "Updated your profile:" at the very end.
+    const regex = /Updated your profile:\s*({[\s\S]*})\s*$/;
+    const match = contentTrimmed.match(regex);
+    if (match) {
+      let jsonString = match[1].trim();
+      // Fix common formatting issues, like missing quotes around property names.
+      jsonString = fixInvalidJson(jsonString);
+
+      const isBalanced = (str) => {
+        let balance = 0;
+        for (const char of str) {
+          if (char === "{") balance++;
+          else if (char === "}") balance--;
+        }
+        return balance === 0;
+      };
+
+      // Helper function to sanitize the JSON string.
+      const sanitizeJsonString = (jsonString) => {
+        // 1. Add quotes around unquoted keys.
+        //    This regex looks for { or , followed by whitespace and a key (letters, digits, or underscores) and a colon.
+        jsonString = jsonString.replace(
+          /([{,]\s*)([A-Za-z0-9_]+)(\s*):/g,
+          '$1"$2"$3:'
+        );
+
+        // 2. Remove trailing commas before } or ].
+        jsonString = jsonString.replace(/,\s*([}\]])/g, "$1");
+
+        return jsonString;
+      };
+
+      // Extracts and parses the career profile JSON from the message content.
+      const extractCareerProfileJson = (messageContent) => {
+        // Look for a block starting with "Updated your profile:" and capturing the JSON until the end.
+        const regex = /Updated your profile:\s*({[\s\S]*})\s*$/;
+        const trimmedContent = messageContent.trim();
+        const match = trimmedContent.match(regex);
+
+        if (!match) {
+          console.error("Could not extract JSON block from message.");
+          return null;
+        }
+
+        let jsonString = match[1].trim();
+
+        // Sanitize the JSON string.
+        jsonString = sanitizeJsonString(jsonString);
+
+        // Ensure the JSON string is balanced.
+        if (!isBalanced(jsonString)) {
+          console.error("Extracted JSON string is not balanced.");
+          return null;
+        }
+
+        try {
+          return JSON.parse(jsonString);
+        } catch (error) {
+          console.error(
+            "Error parsing JSON:",
+            error,
+            "\nSanitized JSON string:",
+            jsonString
+          );
+          return null;
+        }
+      };
+
+      if (!isBalanced(jsonString)) {
+        console.log(
+          "Extracted JSON is not balanced; waiting for complete data."
+        );
+        setProfileLoading(true);
+        return;
+      }
+
+      // Attempt to extract and parse the JSON block.
+      const newCareerData = extractCareerProfileJson(contentTrimmed);
+      if (newCareerData) {
+        // Update only if the new data differs from the current profile.
+        if (JSON.stringify(newCareerData) !== JSON.stringify(careerProfile)) {
+          setCareerProfile(newCareerData);
+          updateCareerProfileInFirestore(newCareerData);
+        }
+      }
+    }
+  }, [messages, appMode, careerProfile, local_npub]);
 
   // console.log("user", user);
+
+  const updateCareerProfileInFirestore = (profile) => {
+    if (local_npub) {
+      const userDocRef = doc(database, "users", local_npub);
+      try {
+        console.log("updating db..");
+        updateDoc(userDocRef, { careerData: profile });
+        console.log("Career profile updated automatically:", profile);
+      } catch (error) {
+        console.error("Error updating career profile:", error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (appMode !== "career") return;
+
+    messages.forEach((msg, i) => {
+      if (
+        msg.role === "assistant" &&
+        msg.content.includes("Updated your profile:")
+      ) {
+        const messageKey = msg.id || `msg-${i}`;
+        if (!profileSnapshots[messageKey]) {
+          const contentTrimmed = msg.content.trim();
+          const regex = /Updated your profile:\s*({[\s\S]*})\s*$/;
+          const match = contentTrimmed.match(regex);
+          if (match) {
+            let jsonString = match[1].trim();
+            jsonString = fixInvalidJson(jsonString);
+            // Check that the JSON appears balanced.
+            const isBalanced = (str) => {
+              let balance = 0;
+              for (const char of str) {
+                if (char === "{") balance++;
+                else if (char === "}") balance--;
+              }
+              return balance === 0;
+            };
+            if (isBalanced(jsonString)) {
+              try {
+                const parsed = JSON.parse(jsonString);
+                // Save this snapshot if parsing succeeds.
+                setProfileSnapshots((prev) => ({
+                  ...prev,
+                  [messageKey]: parsed,
+                }));
+              } catch (e) {
+                console.error("Error parsing JSON for snapshot:", e);
+              }
+            }
+          }
+        }
+      }
+    });
+  }, [messages, appMode, profileSnapshots]);
 
   return (
     <div
@@ -465,6 +689,9 @@ const App = () => {
                       <Dropdown.Item eventKey="undocumented">
                         {lang[language][`title.undocumented`]}
                       </Dropdown.Item>
+                      <Dropdown.Item eventKey="career">
+                        {lang[language]["title.career"]}
+                      </Dropdown.Item>
                       <Dropdown.Item eventKey="law">
                         {lang[language][`title.law`]}
                       </Dropdown.Item>
@@ -472,17 +699,13 @@ const App = () => {
                         {" "}
                         {lang[language][`title.fafsa`]}
                       </Dropdown.Item>
-                      <Dropdown.Item eventKey="resume">
+                      {/* <Dropdown.Item eventKey="resume">
                         {" "}
                         {lang[language][`title.resume`]}
-                      </Dropdown.Item>
+                      </Dropdown.Item> */}
                       <Dropdown.Item eventKey="counselor">
                         {" "}
                         {lang[language][`title.counselor`]}
-                      </Dropdown.Item>
-
-                      <Dropdown.Item eventKey="career">
-                        {lang[language]["title.career"] || "*Career Agent"}
                       </Dropdown.Item>
                     </Dropdown.Menu>
                   </Dropdown>
@@ -528,7 +751,24 @@ const App = () => {
 
               {appMode === "career" && (
                 <div style={{ marginTop: 24 }}>
-                  <CareerAgentWizard
+                  {careerProfile && (
+                    <div
+                      className="career-profile-preview"
+                      style={{
+                        marginTop: "16px",
+                        padding: "12px",
+                        border: "1px solid #ccc",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      <h6>Your Career Profile Preview</h6>
+                      <CareerProfileCard
+                        profile={careerProfile}
+                        userLanguage={language}
+                      />
+                    </div>
+                  )}
+                  {/* <CareerAgentWizard
                     local_npub={local_npub}
                     language={language}
                     onComplete={(finalData) => {
@@ -563,7 +803,41 @@ const App = () => {
                         },
                       ]);
                     }}
-                  />
+                  /> */}
+
+                  {showCareerWizard && (
+                    <div
+                      className="chat-message wizard-embed"
+                      style={{
+                        marginTop: "16px",
+                        background: "#f9f9f9",
+                        padding: "16px",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      {/* <CareerAgentWizard
+                        language={language}
+                        local_npub={local_npub}
+                        // Optional: allow the wizard to update the profile preview as the user types.
+                        onUpdate={(updatedData) => {
+                          setCareerProfile(updatedData);
+                        }}
+                        // When the wizard finishes, update the profile, update Firestore, and hide the wizard.
+                        onComplete={(finalData) => {
+                          setCareerProfile(finalData);
+                          setShowCareerWizard(false);
+
+                          // Optionally, send a chat message to the conversation that the profile has been updated.
+                          submitPrompt([
+                            {
+                              role: "user",
+                              content: "I just updated my career profile.",
+                            },
+                          ]);
+                        }}
+                      /> */}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -576,12 +850,12 @@ const App = () => {
               </div>
             ) : (
               messages.map((msg, i) => {
-                const messageId = msg.id || `msg-${i}`;
-
+                const messageKey = msg.id || `msg-${i}`;
+                const isLastMessage = i === messages.length - 1;
                 return (
                   <div
                     className="message-wrapper"
-                    key={messageId}
+                    key={messageKey}
                     style={{ marginLeft: 56 }}
                   >
                     <div>
@@ -593,31 +867,73 @@ const App = () => {
                             padding: 24,
                           }}
                         >
-                          <Markdown>{msg.content}</Markdown>
-                          {!messages?.[messages?.length - 1]?.meta?.loading ? (
-                            <Button
-                              variant="dark"
-                              size="sm"
-                              onMouseDown={() =>
-                                saveResponse(msg, messages[i - 1], messageId)
-                              }
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  saveResponse(msg, messages[i - 1], messageId);
-                                }
-                              }}
-                            >
-                              {buttonStates[messageId] ||
-                                lang[language].saveResponse}
-                            </Button>
-                          ) : null}
+                          {appMode === "career" &&
+                          msg.content.includes("Updated your profile:") ? (
+                            (() => {
+                              const marker = "Updated your profile:";
+                              // Only display the text before the marker.
+                              const mainContent = msg.content.split(marker)[0];
+                              return (
+                                <>
+                                  {mainContent && (
+                                    <Markdown>{mainContent}</Markdown>
+                                  )}
+                                  <div
+                                    style={{
+                                      marginTop: "12px",
+                                      padding: "8px",
+                                      borderTop: "1px dashed #ccc",
+                                    }}
+                                  >
+                                    {isLastMessage ? (
+                                      profileLoading ? (
+                                        // For the last message show a spinner while loading.
+                                        <div
+                                          style={{
+                                            textAlign: "center",
+                                            padding: "16px",
+                                          }}
+                                        >
+                                          <Spinner
+                                            animation="border"
+                                            variant="primary"
+                                            size="sm"
+                                          />
+                                          <p>Updating profile...</p>
+                                        </div>
+                                      ) : (
+                                        // Once done, use the global careerProfile.
+                                        careerProfile && (
+                                          <CareerProfileCard
+                                            userLanguage={language}
+                                            profile={careerProfile}
+                                          />
+                                        )
+                                      )
+                                    ) : (
+                                      // For previous messages, show the snapshot stored for that message.
+                                      profileSnapshots[messageKey] && (
+                                        <CareerProfileCard
+                                          userLanguage={language}
+                                          profile={profileSnapshots[messageKey]}
+                                        />
+                                      )
+                                    )}
+                                  </div>
+                                </>
+                              );
+                            })()
+                          ) : (
+                            <Markdown>{msg.content}</Markdown>
+                          )}
+                          {/* Optionally include other controls for non-career modes */}
                           <hr />
                         </div>
                       ) : (
                         <div>
-                          {msg.role === "user" ? (
+                          {msg.role === "user" && (
                             <b>{lang[language]["messagePlaceholder"]}</b>
-                          ) : null}
+                          )}
                           <Markdown>
                             {cleanInstructions(
                               msg.content,
@@ -850,6 +1166,10 @@ const App = () => {
                 <Dropdown.Item eventKey="undocumented">
                   {lang[language][`title.undocumented`]}
                 </Dropdown.Item>
+                <Dropdown.Item eventKey="career">
+                  {" "}
+                  {lang[language][`title.career`]}
+                </Dropdown.Item>
                 <Dropdown.Item eventKey="law">
                   {lang[language][`title.law`]}
                 </Dropdown.Item>
@@ -857,17 +1177,13 @@ const App = () => {
                   {" "}
                   {lang[language][`title.fafsa`]}
                 </Dropdown.Item>
-                <Dropdown.Item eventKey="resume">
+                {/* <Dropdown.Item eventKey="resume">
                   {" "}
                   {lang[language][`title.resume`]}
-                </Dropdown.Item>
+                </Dropdown.Item> */}
                 <Dropdown.Item eventKey="counselor">
                   {" "}
                   {lang[language][`title.counselor`]}
-                </Dropdown.Item>
-                <Dropdown.Item eventKey="career">
-                  {" "}
-                  {lang[language][`title.career`]}
                 </Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>

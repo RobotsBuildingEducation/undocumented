@@ -1,5 +1,22 @@
 import { promptSet } from "./prompts";
 
+export const STEPS = [
+  { key: "name", question: "What is your name?" },
+  { key: "city", question: "Where do you live?" },
+  { key: "education", question: "What is your education background?" },
+  { key: "drive", question: "What drives you in your career?" },
+  { key: "competencies", question: "What are your key competencies?" },
+  { key: "examples", question: "Can you share any examples or short stories?" },
+  { key: "intro", question: "Please provide an introduction for your pitch." },
+  { key: "zoneOfGenius", question: "What is your zone of genius?" },
+  {
+    key: "uvpClose",
+    question:
+      "What is your unique value proposition (UVP) or closing statement?",
+  },
+  // ...and so on, you can reorder or break them out how you like
+];
+
 export const isValidDID = (did) => {
   return /^did:(key|dht|ion):/.test(did);
 };
@@ -43,6 +60,34 @@ function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function extractJSONFromMessage(message) {
+  const firstBraceIndex = message.indexOf("{");
+  if (firstBraceIndex === -1) return null;
+
+  let balance = 0;
+  let endIndex = -1;
+
+  // Iterate through the string starting from the first '{'
+  for (let i = firstBraceIndex; i < message.length; i++) {
+    const char = message[i];
+    if (char === "{") {
+      balance++;
+    } else if (char === "}") {
+      balance--;
+      if (balance === 0) {
+        endIndex = i;
+        break;
+      }
+    }
+  }
+
+  // Return the JSON substring if we found a balanced block.
+  if (endIndex !== -1) {
+    return message.substring(firstBraceIndex, endIndex + 1);
+  }
+  return null;
+}
+
 export function cleanInstructions(
   input,
   currentInstructions,
@@ -58,8 +103,7 @@ export function cleanInstructions(
   const allPrompts = Object.values(promptSet); // e.g. [promptSet["undocumented"], promptSet["resume"], ...]
   const promptsToRemove = mustCleanAll ? allPrompts : [currentInstructions];
 
-  // 2) Also remove any leftover text from the known prompt sets that might appear
-  //    (in case the user was on multiple modes, or the AI references them).
+  // 2) Remove any leftover text from the known prompt sets that might appear.
   for (const promptText of promptsToRemove) {
     if (!promptText) continue;
     const escaped = escapeRegex(promptText);
@@ -67,21 +111,26 @@ export function cleanInstructions(
     output = output.replace(regex, "");
   }
 
-  // 3) Language prefix removal:
-  //    e.g., "The user wants you speaking in spanish" or "The user wants you communicating in english"
+  // 3) Remove language prefix:
+  // e.g., "The user wants you speaking in spanish" or "The user wants you communicating in english"
   const languagePrefixPattern =
     /^(The user wants you speaking in spanish|The user wants you communicating in english)\s*/i;
   output = output.replace(languagePrefixPattern, "");
 
-  // 4) State prefix removal, if we have a valid string
+  // 4) Remove state prefix, if present.
   if (statePrefix && statePrefix.trim().length > 0) {
-    // Escape special regex chars in statePrefix
     const escapedState = escapeRegex(statePrefix);
     const statePrefixPattern = new RegExp(`^${escapedState}\\s*`, "i");
     output = output.replace(statePrefixPattern, "");
   }
 
-  // 5) Final cleanup: remove extra whitespace or newlines if desired
+  // 5) Remove any JSON block found within the output.
+  const jsonBlock = extractJSONFromMessage(output);
+  if (jsonBlock) {
+    output = output.replace(jsonBlock, "");
+  }
+
+  // 6) Final cleanup: remove extra whitespace or newlines.
   output = output.replace(/\s\s+/g, " ").trim();
 
   return output;
@@ -145,7 +194,7 @@ The Fourteenth Amendment is a monumental piece of constitutional law that define
 For undocumented individuals, the Fourteenth Amendment is a critical safeguard. It assures that discrimination based on your immigration status is not permissible under the law. If a government official or law enforcement attempts to act in a way that denies your rights, the Fourteenth Amendment is your legal recourse.`,
     ["title.law"]: "Law",
     ["subtitle.law"]: "Intepret American law and constitutional rights",
-    ["title.career"]: "Career Agent (*Under development 🚧)",
+    ["title.career"]: "Career Agent",
     ["title.undocumented"]: "Undocumented",
     ["subtitle.undocumented"]:
       "Legal rights and law enforcement with intelligent assistance",
@@ -198,7 +247,7 @@ For undocumented individuals, the Fourteenth Amendment is a critical safeguard. 
     ["subtitle.law"]:
       "Interpretar la ley estadounidense y los derechos constitucionales",
     ["subtitle.career"]: "Desarrollo profesional y de candidatura",
-    ["title.career"]: "Agente de Carrera (*En desarrollo 🚧)",
+    ["title.career"]: "Agente de Carrera",
     ["title.counselor"]: "Consejero Universitario",
     ["subtitle.counselor"]:
       "Navega la universidad con el apoyo de una asistencia inteligente",
