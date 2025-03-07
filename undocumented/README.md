@@ -1,8 +1,5 @@
-# React + Vite
+# undocumented
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+You're encouraged to fork this code and take it in your own direction. The main file is `App.jsx` and the software is mostly designed to work with AI. Simply copy the code in `App.jsx` to break down 80-90% of the program.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The firebase keys found here are regularly rotated so the keys you see are outdated.
