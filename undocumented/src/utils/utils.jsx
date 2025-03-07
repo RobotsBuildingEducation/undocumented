@@ -132,19 +132,22 @@ export function cleanInstructions(
 
   // 6) Final cleanup: remove extra whitespace or newlines.
   output = output.replace(/\s\s+/g, " ").trim();
+  output = output.replace(/^null\s*/, "");
 
   return output;
 }
 
 export const lang = {
   en: {
+    untitled: "Untitled",
+    updateProfileButton: "Update Profile",
     badBrowser:
       "This app is using a non-standard in-app browser. Follow the instructions below to install the app on your phone in order to access this feature.",
     installAppInstructions1: `Open this page in your browser with the More Options button`,
     installAppInstructions2: `Press the Share button`,
     installAppInstructions3: `Press the Add To Homescreen button`,
     installAppInstructions4: `That's it! You don't need to download the app through an app store because we're using open-source standards for Progressive Web Apps.`,
-
+    profileUpdated: "Profile updated successfully!",
     installApp: "Install App",
     emptyChatInstructions:
       "Write a message and our AI will help you learn more!",
@@ -160,10 +163,15 @@ export const lang = {
         </ul>
       </div>
     ),
-    privacyPolicyContent: `Your data is private and there's no way for us or anyone to know who you are unless you personally share your identity key found in your profile. We collect data that a user chooses to create:
-- The state you reside in
-- Your identity key
-- Messages you save
+    privacyPolicyContent: `Your identity is private and there's no way for us or anyone to confirm who you are. The only way to access your account is through the secret key that's found in your profile. 
+    
+We optionally store data (to improve user experiences) that a user may choose to store:
+- The state you reside in to assist and help specify AI responses (profile)
+- Individiual requests and respective responses that you save (notes)
+- Language preferences
+- Career data to help improve the career agent feature
+
+
     `,
     privacyPolicy: "Privacy Policy",
     selectStateLabel: "Select a state",
@@ -209,14 +217,14 @@ For undocumented individuals, the Fourteenth Amendment is a critical safeguard. 
     ["subtitle.counselor"]:
       "Navigate college with the support of intelligent assistance",
     messagePlaceholder: "Message",
-    saveResponse: "Save response",
+    saveResponse: "Save note",
     languageSwitch: "English",
     modify: "Modify",
-    saved: "Saved",
+    saved: "Notes",
     settings: "Profile",
     filter: "Filter",
     filterPlaceholder: "Filter by title, content or date (M/D/Y)",
-    editTitle: "Edit Title",
+    editTitle: "Add Title",
     editContent: "Edit Content",
     saveChanges: "Save Changes",
     cancel: "Cancel",
@@ -229,20 +237,26 @@ For undocumented individuals, the Fourteenth Amendment is a critical safeguard. 
     copied: "Copied!",
     copyKeys: "🔑 Copy keys",
     copiedKeys: "✅  Keys Copied!",
+    switchAccount: "Switch account",
     switchAccounts: "Switch accounts",
     enterId: "Enter your secret key to switch accounts",
     switch: "Switch",
     visit: "Support the developer",
     invalidDid:
-      "Invalid DID. Please enter a DID starting with did:key, did:dht, or did:ion.",
+      "Invalid secret key. Please enter a valid nostr secret key starting with nsec.",
     errorOccurred: "An error occurred. Please try again.",
     accountSwitched: "Account switched successfully!",
     instructions:
       "👋 You're using a decentralized identity to instantly launch inside of social media. Keep your secret key and store it somewhere safely so you can use it across apps or networks! Additionally, Configure your settings to improve your AI.",
     saving: "Saving...",
     savedButton: "Saved",
+    theCode: "The Code",
   },
   es: {
+    untitled: "Sin título",
+
+    updateProfileButton: "Actualizar perfil",
+    profileUpdated: "¡Perfil actualizado con éxito!",
     ["title.law"]: "Ley",
     ["subtitle.law"]:
       "Interpretar la ley estadounidense y los derechos constitucionales",
@@ -281,10 +295,16 @@ For undocumented individuals, the Fourteenth Amendment is a critical safeguard. 
     emptyChatInstructions:
       "¡Escribe un mensaje y nuestra inteligencia assistance te ayudará a aprender más!",
 
-    privacyPolicyContent: `Tus datos son privados y no hay forma de que nosotros o cualquier otra persona sepamos quién eres a menos que compartas personalmente tu clave de identidad que se encuentra en tu perfil. Recopilamos datos que el usuario elige crear:
-- El estado en el que resides
-- Tu clave de identidad
-- Los mensajes que guardas`,
+    privacyPolicyContent: `Tu identidad es privada y no hay forma de que nosotros o alguien pueda confirmar quién eres. La única manera de acceder a tu cuenta es a través de la clave secreta que se encuentra en tu perfil.
+
+Opcionalmente, almacenamos datos (para mejorar la experiencia del usuario) que el usuario puede elegir guardar:
+
+- El estado en el que resides para ayudar a especificar las respuestas de la IA (perfil)
+- Solicitudes individuales y las respectivas respuestas que guardas (notas)
+- Preferencias de idioma
+- Datos de carrera para ayudar a mejorar la función del agente de carrera
+
+`,
 
     privacyPolicy: "Política de Privacidad",
 
@@ -320,14 +340,16 @@ Para las personas indocumentadas, la Decimocuarta Enmienda es una salvaguarda cr
     ["title.fafsa"]: "La FAFSA",
     ["subtitle.fafsa"]: "Financiación universitaria con ayuda inteligente",
     messagePlaceholder: "Mensaje",
-    saveResponse: "Guardar respuesta",
+    saveResponse: "Guardar nota",
     languageSwitch: "Español",
+
+    theCode: "El Código",
     modify: "Modificar",
-    saved: "Guardado",
+    saved: "Notas",
     settings: "Perfil",
     filter: "Filtrar",
     filterPlaceholder: "Filtrar por título, contenido o fecha (D/M/A)",
-    editTitle: "Editar título",
+    editTitle: "Añadir título",
     editContent: "Editar contenido",
     saveChanges: "Guardar cambios",
     cancel: "Cancelar",
@@ -338,12 +360,13 @@ Para las personas indocumentadas, la Decimocuarta Enmienda es una salvaguarda cr
     currentUserId: "ID de usuario actual",
     copy: "Copiar",
     copied: "¡Copiado!",
+    switchAccount: "Cambia cuenta",
     switchAccounts: "Cambiar cuentas",
     enterId: "Ingresa tu clave secreta para cambiar de cuenta",
     switch: "Cambiar",
     visit: "Apoya al desarrollador",
     invalidDid:
-      "DID inválido. Por favor, ingrese un DID que comience con did:key, did:dht o did:ion.",
+      "Clave secreta inválida. Por favor, ingrese una clave secreta de nostr válida que comience con nsec.",
     errorOccurred: "Ocurrió un error. Por favor, inténtelo de nuevo.",
     accountSwitched: "¡Cuenta cambiada con éxito!",
     instructions:

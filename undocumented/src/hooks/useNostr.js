@@ -77,74 +77,68 @@ export const useSharedNostr = (initialNpub, initialNsec) => {
     }
   };
 
-  const generateNostrKeys = async () =>
-    // userDisplayName = null,
-    // setLoadingMessage,
-    // profileAbout,
-    // introductionPost
-    {
-      // setLoadingMessage("createAccount.isCreating");
-      const privateKeySigner = NDKPrivateKeySigner.generate();
+  const generateNostrKeys = async () => {
+    const privateKeySigner = NDKPrivateKeySigner.generate();
 
-      const privateKey = privateKeySigner.privateKey;
-      const user = await privateKeySigner.user();
+    const privateKey = privateKeySigner.privateKey;
+    const user = await privateKeySigner.user();
 
-      const publicKey = user.npub;
+    const publicKey = user.npub;
 
-      const encodedNsec = bech32.encode(
-        "nsec",
-        bech32.toWords(Buffer.from(privateKey, "hex"))
-      );
-      const encodedNpub = bech32.encode(
-        "npub",
-        bech32.toWords(Buffer.from(publicKey, "hex"))
-      );
+    const encodedNsec = bech32.encode(
+      "nsec",
+      bech32.toWords(Buffer.from(privateKey, "hex"))
+    );
+    const encodedNpub = bech32.encode(
+      "npub",
+      bech32.toWords(Buffer.from(publicKey, "hex"))
+    );
 
-      setNostrPrivKey(encodedNsec);
-      setNostrPubKey(publicKey);
+    setNostrPrivKey(encodedNsec);
+    setNostrPubKey(publicKey);
 
-      if (!localStorage.getItem("local_nsec")) {
-        //Creating profile... 2/4
-        //   setLoadingMessage("createAccount.isCreatingProfile");
-        //   await postNostrContent(
-        //     JSON.stringify({
-        //       name: userDisplayName,
-        //       about: profileAbout,
-        //       // profilePictureUrl:
-        //       //   "https://image.nostr.build/c8d21fe8773d7c5ddf3d6ef73ffe76dbeeec881c131bfb59927ce0b8b71a5607.png",
-        //       // // "https://primal.b-cdn.net/media-cache?s=o&a=1&u=https%3A%2F%2Fm.primal.net%2FKBLq.png",
-        //     }),
-        //     0,
-        //     publicKey,
-        //     encodedNsec
-        //   );
-        // setLoadingMessage("createAccount.isCreatingProfilePicture");
-        // //Creating profile picture... 3/4
-        // setProfilePicture(
-        //   "https://primal.b-cdn.net/media-cache?s=o&a=1&u=https%3A%2F%2Fm.primal.net%2FKBLq.png",
-        //   publicKey,
-        //   encodedNsec
-        // );
-        // if (
-        //   window.location.hostname !== "localhost" &&
-        //   window.location.hostname !== "127.0.0.1"
-        // ) {
-        //   setLoadingMessage("createAccount.isCreatingIntroPost");
-        //Creating introduction post... 4/4
-        //   postNostrContent(introductionPost, 1, publicKey, encodedNsec);
-        // await followUserOnNostr(
-        //   "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt",
-        //   publicKey,
-        //   encodedNsec
-        // );
-      }
+    if (!localStorage.getItem("local_nsec")) {
+      //Creating profile... 2/4
+      //   setLoadingMessage("createAccount.isCreatingProfile");
+      //   await postNostrContent(
+      //     JSON.stringify({
+      //       name: userDisplayName,
+      //       about: profileAbout,
+      //       // profilePictureUrl:
+      //       //   "https://image.nostr.build/c8d21fe8773d7c5ddf3d6ef73ffe76dbeeec881c131bfb59927ce0b8b71a5607.png",
+      //       // // "https://primal.b-cdn.net/media-cache?s=o&a=1&u=https%3A%2F%2Fm.primal.net%2FKBLq.png",
+      //     }),
+      //     0,
+      //     publicKey,
+      //     encodedNsec
+      //   );
+      // setLoadingMessage("createAccount.isCreatingProfilePicture");
+      // //Creating profile picture... 3/4
+      // setProfilePicture(
+      //   "https://primal.b-cdn.net/media-cache?s=o&a=1&u=https%3A%2F%2Fm.primal.net%2FKBLq.png",
+      //   publicKey,
+      //   encodedNsec
+      // );
+      // if (
+      //   window.location.hostname !== "localhost" &&
+      //   window.location.hostname !== "127.0.0.1"
+      // ) {
+      //   setLoadingMessage("createAccount.isCreatingIntroPost");
+      //Creating introduction post... 4/4
+      //   postNostrContent(introductionPost, 1, publicKey, encodedNsec);
+      // await followUserOnNostr(
+      //   "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt",
+      //   publicKey,
+      //   encodedNsec
+      // );
+    }
 
-      localStorage.setItem("local_nsec", encodedNsec);
-      localStorage.setItem("local_npub", publicKey);
-      localStorage.setItem("local_npub", publicKey);
+    localStorage.setItem("local_nsec", encodedNsec);
+    localStorage.setItem("local_npub", publicKey);
+    localStorage.setItem("local_npub", publicKey);
 
-      return { npub: publicKey, nsec: encodedNsec };
-    };
+    return { npub: publicKey, nsec: encodedNsec };
+  };
 
   const connectToNostr = async (npubRef = null, nsecRef = null) => {
     const defaultNsec = import.meta.env.VITE_GLOBAL_NOSTR_NSEC;
@@ -190,8 +184,11 @@ export const useSharedNostr = (initialNpub, initialNsec) => {
 
   const auth = (nsecPassword) => {
     let testnsec = nsecPassword;
+    let decoded;
 
-    let decoded = nip19.decode(testnsec);
+    decoded = nip19.decode(testnsec);
+
+    console.log("decoded", decoded);
 
     const pubkey = getPublicKey(decoded.data);
 

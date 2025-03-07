@@ -9,6 +9,7 @@ import {
 } from "react-bootstrap";
 import isEmpty from "lodash/isEmpty";
 import { doc, setDoc } from "firebase/firestore";
+import { CiUser } from "react-icons/ci";
 
 import { lang } from "../utils/utils";
 import { database } from "../database/setup";
@@ -16,62 +17,68 @@ import USStatesDropdown from "./USStatesDropdown";
 import { useUserStore } from "../store/useUserStore";
 
 const SettingsModal = ({ show, handleClose, language, auth }) => {
-  const { user, setUser } = useUserStore(); // Access Zustand store
+  const { user, setUser } = useUserStore();
   const [inputId, setInputId] = useState("");
   const [error, setError] = useState("");
-
   const [accountSwitchSuccess, setAccountSwitchSuccess] = useState(false);
-  const [selectedState, setSelectedState] = useState("");
+  const [profileUpdateSuccess, setProfileUpdateSuccess] = useState(false);
 
+  const [selectedState, setSelectedState] = useState("");
   const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
     setSelectedState(user?.state === "All states" ? "" : user?.state);
-  }, []);
-
-  useEffect(() => {
-    // if (user?.local_npub) {
-    //   setInputId(user.local_npub); // Pre-fill input with current user ID
-    // }
   }, [user]);
 
   const isValidDID = (did) => {
     return /^did:(key|dht|ion):/.test(did);
   };
 
-  const handleSave = async () => {
-    console.log("inputID...", inputId);
-    // if (inputId !== "") {
+  // Updates only the state field in the user profile
+  const handleUpdateProfile = async () => {
+    try {
+      const userDocRef = doc(database, "users", user.local_npub);
+      const stateresult = isEmpty(selectedState) ? "All states" : selectedState;
+
+      await setDoc(userDocRef, { state: stateresult }, { merge: true });
+      setUser({ ...user, state: stateresult });
+      setError("");
+      setProfileUpdateSuccess(true);
+      // Clear success message after 2 seconds
+      setTimeout(() => setProfileUpdateSuccess(false), 2000);
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      setError(lang[language].errorOccurred);
+    }
+  };
+
+  // Switches accounts using the provided ID
+  const handleSwitchAccount = async () => {
+    if (inputId.trim() === "") {
+      setError(lang[language].invalidDid);
+      return;
+    }
     // if (!isValidDID(inputId)) {
     //   setError(lang[language].invalidDid);
     //   setAccountSwitchSuccess(false);
     //   return;
     // }
-    // return;
-    // }
-
-    console.log(auth(inputId));
-    let newId = auth(inputId);
     try {
+      const newId = auth(inputId);
       const userDocRef = doc(database, "users", newId);
-      const stateresult = isEmpty(selectedState) ? "All states" : selectedState;
-
       const updatedUser = {
-        local_npub: newId || newId,
-        state: stateresult,
+        local_npub: newId,
         createdAt: new Date().toISOString(),
       };
 
-      await setDoc(userDocRef, updatedUser, { merge: true }); // Save to Firestore
-
-      localStorage.setItem("local_npub", updatedUser.local_npub); // Persist locally
-
-      setUser(updatedUser); // Update Zustand store
+      await setDoc(userDocRef, updatedUser, { merge: true });
+      localStorage.setItem("local_npub", updatedUser.local_npub);
+      setUser(updatedUser);
       setAccountSwitchSuccess(true);
       setError("");
       setInputId("");
     } catch (err) {
-      console.error("Error saving user data:", err);
+      console.error("Error switching account:", err);
       setError(lang[language].errorOccurred);
       setAccountSwitchSuccess(false);
     }
@@ -106,42 +113,43 @@ const SettingsModal = ({ show, handleClose, language, auth }) => {
           {lang[language].instructions}
         </div>
         <br />
+        <div style={{ paddingBottom: 8 }}>
+          <CiUser />
+          {user?.local_npub ? `${user.local_npub.slice(0, 16)}...` : ""}
+        </div>
         <Button variant="outline-secondary" onMouseDown={handleCopy}>
           {copySuccess ? lang[language].copiedKeys : lang[language].copyKeys}
         </Button>
         <br />
         <br />
-        <Button
-          variant="link"
-          href="https://patreon.com/NotesAndOtherStuff"
-          target="_blank"
-        >
-          {lang[language].visit}
-        </Button>
-        <br /> <br />
         {accountSwitchSuccess && (
-          <Alert variant="success">{lang[language].accountSwitched}</Alert>
+          <Alert variant="success">
+            {lang[language].accountSwitched || "Account switched successfully!"}
+          </Alert>
         )}
         <Form>
-          <Form.Group controlId="formCurrentUserId">
-            <Form.Label>{lang[language].currentUserId}</Form.Label>
-            <InputGroup>
-              <FormControl
-                type="text"
-                value={
-                  user?.local_npub ? `${user.local_npub.slice(0, 16)}...` : ""
-                }
-                readOnly
-              />
-            </InputGroup>
-          </Form.Group>
-          <br />
           <USStatesDropdown
             lang={lang}
             language={language}
             selectedState={selectedState}
             onSelectState={setSelectedState}
           />
+
+          <Button
+            variant="outline-secondary"
+            onMouseDown={handleUpdateProfile}
+            style={{
+              marginTop: "8px",
+            }}
+          >
+            {lang[language].updateProfileButton}
+          </Button>
+          {profileUpdateSuccess && (
+            <Alert variant="success" style={{ marginTop: 10 }}>
+              {lang[language].profileUpdated || "Profile updated successfully!"}
+            </Alert>
+          )}
+          <br />
           <br />
           <Form.Group controlId="formUserId">
             <Form.Label>{lang[language].switchAccounts}</Form.Label>
@@ -153,12 +161,18 @@ const SettingsModal = ({ show, handleClose, language, auth }) => {
             />
             {error && <small className="text-danger">{error}</small>}
           </Form.Group>
+          <Button
+            variant="outline-secondary"
+            onMouseDown={handleSwitchAccount}
+            style={{
+              marginTop: "8px",
+            }}
+          >
+            {lang[language].switchAccount}
+          </Button>
         </Form>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="dark" onMouseDown={handleSave}>
-          {lang[language].modify}
-        </Button>
         <Button variant="tertiary" onMouseDown={handleClose}>
           {lang[language].close}
         </Button>

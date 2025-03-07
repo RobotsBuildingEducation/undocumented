@@ -71,7 +71,8 @@
   background-color: rgba(237, 237, 237, 0.9);
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
-  padding-top: 0.75rem;
+  padding-top: 0.5rem;
+  padding-bottom: 16px;
 }
 
 .prompt-wrapper > div {
@@ -99,6 +100,7 @@
   height: 100px;
   margin-bottom: 4px;
   /* margin-right: 1rem; */
+  box-shadow: 0.5px 0.5px 1px 0px black;
 }
 
 .listening-animation {
@@ -126,14 +128,15 @@
 .custom-dropdown-toggle {
   background-color: transparent !important;
   /* border: none !important; */
-  border: 2px solid gray;
+  border: 1px solid transparent;
   color: inherit !important;
   /* border: 1px solid red !important; */
-  padding: 0.15rem 0.35rem; /* optional: adjust padding as needed */
+  padding: 0.35rem 0.35rem; /* optional: adjust padding as needed */
 }
 
 .custom-dropdown-toggle:hover {
-  background-color: rgba(0, 0, 0, 0.1); /* optional: add a hover effect */
+  background-color: rgba(0, 0, 0, 0.1);
+  optional: add a hover effect;
 }
 .custom-dropdown-toggle:focus {
   outline: none; /* Remove the default focus outline */

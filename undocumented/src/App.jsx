@@ -167,6 +167,41 @@ const App = () => {
     resetMessages();
   };
 
+  // const onSend = async () => {
+  //   try {
+  //     setIsSending(true);
+
+  //     const languagePrefix =
+  //       language === "es"
+  //         ? "The user wants you speaking in spanish"
+  //         : "The user wants you communicating in english";
+
+  //     const statePrefix = `${prefixMap[appMode]} in ${user.state}`;
+
+  //     let finalInstructions = instructions;
+  //     if (appMode === "career") {
+  //       finalInstructions = instructions + JSON.stringify(careerProfile);
+  //     }
+
+  //     await submitPrompt([
+  //       {
+  //         content: `${languagePrefix} ${
+  //           appMode === "resume" ? "" : "" + statePrefix
+  //         } ${finalInstructions} ${promptText}`,
+  //         role: "user",
+  //       },
+  //     ]);
+  //     setPromptText("");
+  //     resetTranscript();
+  //     setIsSending(false);
+  //   } catch (error) {
+  //     alert("failed to run. need to fix this later");
+  //     console.log("error", error);
+  //     setPromptText(JSON.stringify({ error }));
+  //     setIsSending(false);
+  //   }
+  // };
+
   const onSend = async () => {
     try {
       setIsSending(true);
@@ -176,7 +211,9 @@ const App = () => {
           ? "The user wants you speaking in spanish"
           : "The user wants you communicating in english";
 
-      const statePrefix = `${prefixMap[appMode]} in ${user.state}`;
+      // Only include the state if user.state is truthy.
+      const stateText = user.state ? ` in ${user.state}` : "";
+      const statePrefix = prefixMap[appMode] + stateText;
 
       let finalInstructions = instructions;
       if (appMode === "career") {
@@ -186,7 +223,7 @@ const App = () => {
       await submitPrompt([
         {
           content: `${languagePrefix} ${
-            appMode === "resume" ? "" : "" + statePrefix
+            appMode === "resume" ? "" : statePrefix
           } ${finalInstructions} ${promptText}`,
           role: "user",
         },
@@ -201,7 +238,6 @@ const App = () => {
       setIsSending(false);
     }
   };
-
   const handleShowModal = () => setShowModal(true);
   const handleCloseModal = () => setShowModal(false);
 
@@ -280,6 +316,7 @@ const App = () => {
       }
     };
   }, [transcript, listening]);
+
   const saveResponse = async (msg, userMsg, messageId) => {
     // console.log("MSG", msg);
     if (local_npub) {
@@ -297,7 +334,8 @@ const App = () => {
         content: cleanInstructions(
           msg.content,
           instructions,
-          prefixMap[appMode]
+          `${prefixMap[appMode]}${user.state ? " in " + user.state : ""}`,
+          true
         ),
         original: promptText, // Store the original user message
         role: msg.role,
@@ -305,7 +343,8 @@ const App = () => {
         userMsg: cleanInstructions(
           userMsg?.content,
           instructions,
-          prefixMap[appMode]
+          `${prefixMap[appMode]}${user.state ? " in " + user.state : ""}`,
+          true
         ),
       });
 
@@ -466,6 +505,7 @@ const App = () => {
     setProfileLoading(false);
 
     const contentTrimmed = lastMessage.content.trim();
+    console.log("CONTENT TRIMMED", contentTrimmed);
     if (!contentTrimmed.endsWith("}")) {
       console.log(
         "Final message does not end with '}', waiting for complete JSON."
@@ -629,12 +669,17 @@ const App = () => {
     >
       <div
         className="menu-icon"
-        onClick={handleShowMenu}
         style={{
           position: "fixed",
-          top: "12px", // Adjust this value as needed
-          left: "12px", // Adjust this value as needed
+
           zIndex: 1000, // Ensures it stays above other elements
+
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          backgroundColor: "#FFFEF5",
+
+          padding: 8,
         }}
       >
         <Button
@@ -646,6 +691,77 @@ const App = () => {
         >
           <FontAwesomeIcon icon={faBars} size="1x" />
         </Button>
+        &nbsp;&nbsp;&nbsp;
+        <Dropdown
+          style={{
+            backgroundColor: "#FFFEF5",
+          }}
+          onSelect={(selectedKey) => handleAppModeChange(selectedKey)}
+        >
+          <Dropdown.Toggle
+            variant="secondary"
+            id="dropdown-custom-components"
+            className="custom-dropdown-toggle"
+            style={{
+              width: "min-content",
+              transition: "min-width 0.3s ease", // Smooth width transition
+            }}
+          >
+            {appMode === "law"
+              ? lang[language][`title.law`]
+              : appMode === "undocumented"
+              ? lang[language][`title.undocumented`]
+              : appMode === "fafsa"
+              ? lang[language][`title.fafsa`]
+              : appMode === "resume"
+              ? lang[language][`title.resume`]
+              : appMode === "career"
+              ? lang[language]["title.career"]
+              : appMode === "counselor"
+              ? lang[language][`title.counselor`]
+              : ""}
+          </Dropdown.Toggle>
+
+          <Dropdown.Menu>
+            <Dropdown.Item eventKey="undocumented">
+              {lang[language][`title.undocumented`]}
+            </Dropdown.Item>
+            <Dropdown.Item eventKey="career">
+              {" "}
+              {lang[language][`title.career`]}
+            </Dropdown.Item>
+            <Dropdown.Item eventKey="law">
+              {lang[language][`title.law`]}
+            </Dropdown.Item>
+            <Dropdown.Item eventKey="fafsa">
+              {" "}
+              {lang[language][`title.fafsa`]}
+            </Dropdown.Item>
+            {/* <Dropdown.Item eventKey="resume">
+                  {" "}
+                  {lang[language][`title.resume`]}
+                </Dropdown.Item> */}
+            <Dropdown.Item eventKey="counselor">
+              {" "}
+              {lang[language][`title.counselor`]}
+            </Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
+        &nbsp;&nbsp; &nbsp;
+        <Form>
+          <Form.Check
+            type="switch"
+            id="language-switch"
+            label={lang[language].languageSwitch}
+            checked={language === "es"}
+            onChange={handleLanguageChange}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleLanguageChange();
+              }
+            }}
+          />
+        </Form>
       </div>
 
       {isLoadingApp ? (
@@ -657,7 +773,7 @@ const App = () => {
           <div
             className="chat-wrapper"
             style={{
-              marginTop: 128,
+              marginTop: 64,
               // marginLeft: 56,
             }}
           >
@@ -665,70 +781,11 @@ const App = () => {
               <img src={logo} width="96" />
               <span style={{ display: "flex", alignItems: "center" }}>
                 <h4>{lang[language][`title.${appMode}`]}</h4>&nbsp;
-                <Form>
-                  {/* Dropdown for "undocumented" and "fafsa" */}
-                  <Dropdown
-                    style={{
-                      backgroundColor: "#FFFEF5",
-                    }}
-                    onSelect={(selectedKey) => handleAppModeChange(selectedKey)}
-                  >
-                    <Dropdown.Toggle
-                      variant="secondary"
-                      id="dropdown-custom-components"
-                      className="custom-dropdown-toggle"
-                      style={{
-                        width: "min-content",
-                        transition: "min-width 0.3s ease", // Smooth width transition
-                      }}
-                    >
-                      {/* {appMode === "undocumented" ? "Undocumented" : "FAFSA"} */}
-                    </Dropdown.Toggle>
-
-                    <Dropdown.Menu>
-                      <Dropdown.Item eventKey="undocumented">
-                        {lang[language][`title.undocumented`]}
-                      </Dropdown.Item>
-                      <Dropdown.Item eventKey="career">
-                        {lang[language]["title.career"]}
-                      </Dropdown.Item>
-                      <Dropdown.Item eventKey="law">
-                        {lang[language][`title.law`]}
-                      </Dropdown.Item>
-                      <Dropdown.Item eventKey="fafsa">
-                        {" "}
-                        {lang[language][`title.fafsa`]}
-                      </Dropdown.Item>
-                      {/* <Dropdown.Item eventKey="resume">
-                        {" "}
-                        {lang[language][`title.resume`]}
-                      </Dropdown.Item> */}
-                      <Dropdown.Item eventKey="counselor">
-                        {" "}
-                        {lang[language][`title.counselor`]}
-                      </Dropdown.Item>
-                    </Dropdown.Menu>
-                  </Dropdown>
-                </Form>
               </span>
               <small>
                 <b>{lang[language][`subtitle.${appMode}`]}</b>
               </small>
               <br />
-              <Form>
-                <Form.Check
-                  type="switch"
-                  id="language-switch"
-                  label={lang[language].languageSwitch}
-                  checked={language === "es"}
-                  onChange={handleLanguageChange}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleLanguageChange();
-                    }
-                  }}
-                />
-              </Form>
 
               {appMode === "undocumented" ? (
                 <>
@@ -852,6 +909,10 @@ const App = () => {
               messages.map((msg, i) => {
                 const messageKey = msg.id || `msg-${i}`;
                 const isLastMessage = i === messages.length - 1;
+                const userMsg =
+                  i > 0 && messages[i - 1].role === "user"
+                    ? messages[i - 1]
+                    : null;
                 return (
                   <div
                     className="message-wrapper"
@@ -869,76 +930,80 @@ const App = () => {
                         >
                           {appMode === "career" &&
                           msg.content.includes("Updated your profile:") ? (
-                            (() => {
-                              const marker = "Updated your profile:";
-                              // Only display the text before the marker.
-                              const mainContent = msg.content.split(marker)[0];
-                              return (
-                                <>
-                                  {mainContent && (
-                                    <Markdown>{mainContent}</Markdown>
-                                  )}
-                                  <div
-                                    style={{
-                                      marginTop: "12px",
-                                      padding: "8px",
-                                      borderTop: "1px dashed #ccc",
-                                    }}
-                                  >
-                                    {isLastMessage ? (
-                                      profileLoading ? (
-                                        // For the last message show a spinner while loading.
-                                        <div
-                                          style={{
-                                            textAlign: "center",
-                                            padding: "16px",
-                                          }}
-                                        >
-                                          <Spinner
-                                            animation="border"
-                                            variant="primary"
-                                            size="sm"
-                                          />
-                                          <p>Updating profile...</p>
-                                        </div>
-                                      ) : (
-                                        // Once done, use the global careerProfile.
-                                        careerProfile && (
-                                          <CareerProfileCard
-                                            userLanguage={language}
-                                            profile={careerProfile}
-                                          />
-                                        )
-                                      )
-                                    ) : (
-                                      // For previous messages, show the snapshot stored for that message.
-                                      profileSnapshots[messageKey] && (
-                                        <CareerProfileCard
-                                          userLanguage={language}
-                                          profile={profileSnapshots[messageKey]}
-                                        />
-                                      )
-                                    )}
-                                  </div>
-                                </>
-                              );
-                            })()
+                            <>
+                              <Markdown>
+                                {msg.content.split("Updated your profile:")[0]}
+                              </Markdown>
+                              <div
+                                style={{
+                                  marginTop: "12px",
+                                  padding: "8px",
+                                  borderTop: "1px dashed #ccc",
+                                }}
+                              >
+                                {isLastMessage ? (
+                                  profileLoading ? (
+                                    <div
+                                      style={{
+                                        textAlign: "center",
+                                        padding: "16px",
+                                      }}
+                                    >
+                                      <Spinner
+                                        animation="border"
+                                        variant="primary"
+                                        size="sm"
+                                      />
+                                      <p>Updating profile...</p>
+                                    </div>
+                                  ) : (
+                                    careerProfile && (
+                                      <CareerProfileCard
+                                        userLanguage={language}
+                                        profile={careerProfile}
+                                      />
+                                    )
+                                  )
+                                ) : (
+                                  profileSnapshots[messageKey] && (
+                                    <CareerProfileCard
+                                      userLanguage={language}
+                                      profile={profileSnapshots[messageKey]}
+                                    />
+                                  )
+                                )}
+                              </div>
+                            </>
                           ) : (
                             <Markdown>{msg.content}</Markdown>
                           )}
-                          {/* Optionally include other controls for non-career modes */}
+                          {!msg.meta?.loading && (
+                            <div
+                              style={{ marginTop: "8px", textAlign: "right" }}
+                            >
+                              <Button
+                                variant="dark"
+                                size="sm"
+                                onClick={() =>
+                                  saveResponse(msg, userMsg, messageKey)
+                                }
+                              >
+                                {buttonStates[messageKey] ||
+                                  lang[language].saveResponse}
+                              </Button>
+                            </div>
+                          )}
                           <hr />
                         </div>
                       ) : (
                         <div>
-                          {msg.role === "user" && (
-                            <b>{lang[language]["messagePlaceholder"]}</b>
-                          )}
                           <Markdown>
                             {cleanInstructions(
                               msg.content,
                               promptSet[appMode],
-                              `${prefixMap[appMode]} in ${user.state}`,
+                              `${prefixMap[appMode]}${
+                                user.state ? " in " + user.state : ""
+                              }`,
                               true
                             )}
                           </Markdown>
@@ -1117,82 +1182,11 @@ const App = () => {
         <Offcanvas.Body>
           {/* Column layout for full-width buttons */}
           <div className="d-flex flex-column" style={{ alignItems: "center" }}>
-            <Form>
-              <Form.Check
-                type="switch"
-                id="language-switch"
-                label={lang[language].languageSwitch}
-                checked={language === "es"}
-                onChange={handleLanguageChange}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleLanguageChange();
-                  }
-                }}
-              />
-            </Form>
-            <br />
-            <Dropdown
-              style={{
-                backgroundColor: "#FFFEF5",
-              }}
-              onSelect={(selectedKey) => handleAppModeChange(selectedKey)}
-            >
-              <Dropdown.Toggle
-                variant="secondary"
-                id="dropdown-custom-components"
-                className="custom-dropdown-toggle"
-                style={{
-                  width: "min-content",
-                  transition: "min-width 0.3s ease", // Smooth width transition
-                }}
-              >
-                {appMode === "law"
-                  ? lang[language][`title.law`]
-                  : appMode === "undocumented"
-                  ? lang[language][`title.undocumented`]
-                  : appMode === "fafsa"
-                  ? lang[language][`title.fafsa`]
-                  : appMode === "resume"
-                  ? lang[language][`title.resume`]
-                  : appMode === "career"
-                  ? lang[language]["title.career"]
-                  : appMode === "counselor"
-                  ? lang[language][`title.counselor`]
-                  : ""}
-              </Dropdown.Toggle>
-
-              <Dropdown.Menu>
-                <Dropdown.Item eventKey="undocumented">
-                  {lang[language][`title.undocumented`]}
-                </Dropdown.Item>
-                <Dropdown.Item eventKey="career">
-                  {" "}
-                  {lang[language][`title.career`]}
-                </Dropdown.Item>
-                <Dropdown.Item eventKey="law">
-                  {lang[language][`title.law`]}
-                </Dropdown.Item>
-                <Dropdown.Item eventKey="fafsa">
-                  {" "}
-                  {lang[language][`title.fafsa`]}
-                </Dropdown.Item>
-                {/* <Dropdown.Item eventKey="resume">
-                  {" "}
-                  {lang[language][`title.resume`]}
-                </Dropdown.Item> */}
-                <Dropdown.Item eventKey="counselor">
-                  {" "}
-                  {lang[language][`title.counselor`]}
-                </Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown>
-            <br />
             <Button
               // size="sm"
               variant="outline-secondary"
               onMouseDown={() => setShowSettingsModal(true)}
-              style={{ width: "100%" }}
+              style={{ width: "100%", padding: 32 }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   setShowSettingsModal(true);
@@ -1211,7 +1205,7 @@ const App = () => {
                   handleShowResponsesModal();
                 }
               }}
-              style={{ width: "100%" }}
+              style={{ width: "100%", padding: 32 }}
             >
               {lang[language].saved}
             </Button>
@@ -1225,6 +1219,7 @@ const App = () => {
                   handleShowInstallAppModal(false);
                 }
               }}
+              style={{ width: "100%", padding: 32 }}
             >
               {lang[language].installApp}
             </Button>
@@ -1233,7 +1228,7 @@ const App = () => {
             <Button
               variant="outline-secondary"
               onClick={handleShowPrivacyPolicyModal}
-              style={{ width: "100%" }}
+              style={{ width: "100%", padding: 32 }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   handleShowPrivacyPolicyModal();
@@ -1241,6 +1236,15 @@ const App = () => {
               }}
             >
               {lang[language].privacyPolicy}
+            </Button>
+            <br />
+            <Button
+              href="https://github.com/RobotsBuildingEducation/undocumented"
+              target="_blank"
+              variant="outline-secondary"
+              style={{ width: "100%", padding: 32 }}
+            >
+              {lang[language].theCode}
             </Button>
 
             {/* Add more menu items here */}

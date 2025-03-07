@@ -63,7 +63,7 @@ The user may provide data about the state they reside in, otherwise they will as
 
 
   Import exceptions to make:
-  1. If no relevant information is provided that can satisfy the development of the json, then do not write a JSON for us to process and update. 
+  1. If no relevant information is provided that can satisfy the development of the json, then do not return the expected end string "Updated your profile: { json }" for us to process and update. 
   
   2. If users already have existing career data, resume with the existing data. The current data is: `,
 };

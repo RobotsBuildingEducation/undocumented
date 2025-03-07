@@ -18,6 +18,8 @@ import {
 } from "firebase/firestore";
 import { database } from "../database/setup";
 import { lang } from "../utils/utils";
+import "../example.css";
+import Markdown from "react-markdown";
 
 const ResponsesModal = ({
   show,
@@ -136,6 +138,20 @@ const ResponsesModal = ({
             <b> {selectedResponse?.userMsg}</b>
             <br />
             <br />
+            <div
+              className="message-wrapper"
+              style={{
+                backgroundColor: "#F0F0F0",
+                borderRadius: 24,
+                padding: 24,
+              }}
+              // style={{ backgroundColor: "#F0F0F0" }}
+            >
+              <Markdown>{editedContent}</Markdown>
+            </div>
+            {/* F0F0F0 */}
+            <br />
+            <br />
             <Form.Group controlId="formEditContent">
               <Form.Label>{lang[language].editContent}</Form.Label>
               <Form.Control
@@ -168,6 +184,8 @@ const ResponsesModal = ({
                     overflow: "hidden",
                     display: "flex",
                     flexDirection: "column",
+                    border: "1px solid transparent",
+                    boxShadow: "0.5px 0.5px 1px 0px darkgray",
                   }}
                 >
                   <Card.Body
@@ -187,27 +205,39 @@ const ResponsesModal = ({
                           textOverflow: "ellipsis",
                         }}
                       >
-                        {response.title}
+                        {response.title || lang[language].untitled}
                       </Card.Title>
+                      <Card.Subtitle className="mb-2 text-muted">
+                        {new Date(response.createdAt).toLocaleString()}
+                      </Card.Subtitle>
                       <Card.Text
                         style={{
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           display: "-webkit-box",
-                          WebkitLineClamp: 3,
+                          // WebkitLineClamp: 4,
                           WebkitBoxOrient: "vertical",
                         }}
                       >
+                        <br />
                         {response?.userMsg?.substring(0, 100)}
-                        <hr />
-                        {response?.original} <br />
-                        {response?.content?.substring(0, 100)}...
+                        {/* <hr /> */}
+                        <div
+                          className="message-wrapper"
+                          style={{
+                            backgroundColor: "#F0F0F0",
+                            borderRadius: 24,
+                            padding: 24,
+                            paddingTop: 12,
+                            paddingBottom: 24,
+                          }}
+                        >
+                          {/* {response?.original} <br /> */}
+                          {response?.content?.substring(0, 100)}...
+                        </div>
                       </Card.Text>
                     </div>
                     <div style={{ marginTop: "auto", textAlign: "center" }}>
-                      <Card.Subtitle className="mb-2 text-muted">
-                        {new Date(response.createdAt).toLocaleString()}
-                      </Card.Subtitle>
                       <Button
                         variant="dark"
                         size="sm"
