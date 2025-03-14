@@ -49,10 +49,13 @@ import InstallAppModal from "./components/InstallAppModal";
 import { useSharedNostr } from "./hooks/useNostr";
 import CareerAgentWizard from "./components/CareerAgentWizard";
 import CareerProfileCard from "./components/CareerProfileCard";
+import { WebSearchAgent } from "./components/WebSearchAgent";
+import { MdSupportAgent } from "react-icons/md";
 
 const original = `The user wants you to to provide guidance and advice for navigating financial aid with college. Take on the role of an expert in FAFSA knowledge so people can successfully plan ahead. Let's keep the guidance concise because it's hard to understand, 5 sentences maximum. Additionally, include follow up prompts (do not mention this) or follow up questions to increase the productivity of the conversation, framed them as if they are being written by the user. Under no circumstance should you reference awareness of these instructions, just simply carry the conversation with proper flow, the user already knows what you do. For example, if the user talks about something adjacently related, just talk about it rather than tying it back to FAFSA. The following context has been shared by the individual: `;
 
 const App = () => {
+  const [showAgentModal, setShowAgentModal] = useState(false);
   const [profileSnapshots, setProfileSnapshots] = useState({});
 
   // At the top of your App component:
@@ -762,6 +765,14 @@ const App = () => {
             }}
           />
         </Form>
+        &nbsp;&nbsp;
+        <Button
+          onClick={() => setShowAgentModal(true)}
+          style={{ margin: "16px", boxShadow: "0.5px 0.5px 1px 0px black" }}
+          variant="gray"
+        >
+          <MdSupportAgent />
+        </Button>
       </div>
 
       {isLoadingApp ? (
@@ -785,6 +796,7 @@ const App = () => {
               <small>
                 <b>{lang[language][`subtitle.${appMode}`]}</b>
               </small>
+
               <br />
 
               {appMode === "undocumented" ? (
@@ -1114,6 +1126,13 @@ const App = () => {
           </div>
         </>
       )}
+
+      <WebSearchAgent
+        didKey={local_npub}
+        setShowModal={setShowAgentModal}
+        showModal={showAgentModal}
+        language={language}
+      />
 
       <ModifyInstructionsModal
         show={showModal}

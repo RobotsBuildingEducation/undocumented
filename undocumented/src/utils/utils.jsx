@@ -139,6 +139,29 @@ export function cleanInstructions(
 
 export const lang = {
   en: {
+    "webSearchAgent.description":
+      "Prepares a list of resources and legal experts that you can contact for real assistance and help.",
+
+    "webSearchAgent.modalTitle": "Legal Assistance Search Agent",
+    "webSearchAgent.cityLabel": "Your City",
+    "webSearchAgent.cityPlaceholder": "Enter your city",
+    "webSearchAgent.stateLabel": "Your State",
+    "webSearchAgent.statePlaceholder": "Enter your state",
+    "webSearchAgent.additionalInfoLabel": "Additional Information",
+    "webSearchAgent.additionalInfoPlaceholder":
+      "Any additional information or details",
+    "webSearchAgent.startSearchButton": "Start Search",
+    "webSearchAgent.spinnerText": "Preparing a list of resources...",
+    "webSearchAgent.resultsTitle": "Results:",
+    "webSearchAgent.queryTitle": "Your Query:",
+    "webSearchAgent.noResults":
+      'No results yet. Click "Start Search" to fetch results.',
+    "webSearchAgent.prompt.city": "City:",
+    "webSearchAgent.prompt.state": "State:",
+    "webSearchAgent.prompt.additionalInfo": "Additional Info:",
+    "webSearchAgent.prompt.profileInfo": "Profile Info:",
+    "webSearchAgent.prompt.query":
+      "The user is undocumented and is searching for legal assistance to navigate law enforcement. The assistance must be accessible and affordable. Return a list outlining the name, expected costs or fees (free or not), phone number and address (if available) and website link in list format. Do not use headers, only use bold.",
     untitled: "Untitled",
     updateProfileButton: "Update Profile",
     badBrowser:
@@ -253,6 +276,26 @@ For undocumented individuals, the Fourteenth Amendment is a critical safeguard. 
     theCode: "The Code",
   },
   es: {
+    "webSearchAgent.description":
+      "Prepara una lista de recursos y expertos legales con los que puedes ponerte en contacto para obtener ayuda y asistencia reales.",
+    "webSearchAgent.modalTitle": "Agente de búsqueda de asistencia legal",
+    "webSearchAgent.cityLabel": "Tu ciudad",
+    "webSearchAgent.cityPlaceholder": "Ingresa tu ciudad",
+    "webSearchAgent.stateLabel": "Tu estado",
+    "webSearchAgent.statePlaceholder": "Ingresa tu estado",
+    "webSearchAgent.additionalInfoLabel": "Información adicional",
+    "webSearchAgent.additionalInfoPlaceholder":
+      "Cualquier información o detalle adicional",
+    "webSearchAgent.startSearchButton": "Iniciar búsqueda",
+    "webSearchAgent.spinnerText": "Preparando una lista de recursos...",
+    "webSearchAgent.resultsTitle": "Resultados:",
+    "webSearchAgent.queryTitle": "Tu consulta:",
+    "webSearchAgent.noResults":
+      'Aún no hay resultados. Haz clic en "Iniciar búsqueda" para obtener resultados.',
+    "webSearchAgent.prompt.city": "Ciudad:",
+    "webSearchAgent.prompt.state": "Estado:",
+    "webSearchAgent.prompt.additionalInfo": "Información adicional:",
+    "webSearchAgent.prompt.profileInfo": "Información del perfil:",
     untitled: "Sin título",
 
     updateProfileButton: "Actualizar perfil",
