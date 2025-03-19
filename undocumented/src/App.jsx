@@ -683,6 +683,7 @@ const App = () => {
           backgroundColor: "#FFFEF5",
 
           padding: 8,
+          paddingBottom: 0,
         }}
       >
         <Button
@@ -784,7 +785,7 @@ const App = () => {
           <div
             className="chat-wrapper"
             style={{
-              marginTop: 64,
+              marginTop: 96,
               // marginLeft: 56,
             }}
           >
