@@ -46,12 +46,6 @@ export const isUnsupportedBrowser = () => {
 
 export const prefixMap = {
   undocumented: "The user is asking about law & enforcement",
-  law: "The user is asking about interpretation of American laws and constitutional rights",
-  fafsa: "The user is asking about financing college or higher education",
-  resume: "The user is asking about improving their job prospects",
-  counselor: "The user is asking about navigating college",
-  career: "The user is asking about career and candidacy development",
-  // "career": "drafting elevator pitches" // if desired
 };
 
 // if you have a default or fallback
@@ -223,22 +217,9 @@ The Fourteenth Amendment is a monumental piece of constitutional law that define
 - **Citizenship Clause**: While primarily addressing the rights of those born or naturalized in the U.S., this clause underscores the principle that the law applies to all persons, not just citizens.
 
 For undocumented individuals, the Fourteenth Amendment is a critical safeguard. It assures that discrimination based on your immigration status is not permissible under the law. If a government official or law enforcement attempts to act in a way that denies your rights, the Fourteenth Amendment is your legal recourse.`,
-    ["title.law"]: "Law",
-    ["subtitle.law"]: "Intepret American law and constitutional rights",
-    ["title.career"]: "Career Agent",
     ["title.undocumented"]: "Undocumented",
     ["subtitle.undocumented"]:
       "Legal rights and law enforcement with intelligent assistance",
-    ["title.fafsa"]: "La FAFSA",
-    ["subtitle.fafsa"]:
-      "College finance information with intelligent assistance",
-    ["subtitle.career"]: "Career and candidacy development",
-    ["title.resume"]: "Smart Resume",
-    ["subtitle.resume"]:
-      "Job application resume support with intelligent assistance",
-    ["title.counselor"]: "College Counselor",
-    ["subtitle.counselor"]:
-      "Navigate college with the support of intelligent assistance",
     messagePlaceholder: "Message",
     saveResponse: "Save note",
     languageSwitch: "English",
@@ -300,14 +281,6 @@ For undocumented individuals, the Fourteenth Amendment is a critical safeguard. 
 
     updateProfileButton: "Actualizar perfil",
     profileUpdated: "¡Perfil actualizado con éxito!",
-    ["title.law"]: "Ley",
-    ["subtitle.law"]:
-      "Interpretar la ley estadounidense y los derechos constitucionales",
-    ["subtitle.career"]: "Desarrollo profesional y de candidatura",
-    ["title.career"]: "Agente de Carrera",
-    ["title.counselor"]: "Consejero Universitario",
-    ["subtitle.counselor"]:
-      "Navega la universidad con el apoyo de una asistencia inteligente",
     "emptyChatInstructions.resume": (
       <div>
         ¡Escribe un mensaje y nuestra IA te ayudará a aprender más! La
@@ -320,9 +293,6 @@ For undocumented individuals, the Fourteenth Amendment is a critical safeguard. 
         </ul>
       </div>
     ),
-    ["title.resume"]: "Currículum Inteligente",
-    ["subtitle.resume"]:
-      "Ayuda inteligente para tu currículum y solicitudes de empleo",
 
     copyKeys: "🔑 Copiar claves",
     copiedKeys: "✅ ¡Claves copiadas!",
@@ -380,8 +350,6 @@ Para las personas indocumentadas, la Decimocuarta Enmienda es una salvaguarda cr
     ["title.undocumented"]: "Indocumentado",
     ["subtitle.undocumented"]:
       "Derechos legales y cumplimiento de la ley con asistencia inteligente",
-    ["title.fafsa"]: "La FAFSA",
-    ["subtitle.fafsa"]: "Financiación universitaria con ayuda inteligente",
     messagePlaceholder: "Mensaje",
     saveResponse: "Guardar nota",
     languageSwitch: "Español",

@@ -12,7 +12,7 @@ import { FiSend } from "react-icons/fi";
 
 // import { DidJwk } from "@web5/dids";
 
-import { Button, Dropdown, Form, Offcanvas, Spinner } from "react-bootstrap";
+import { Button, Form, Offcanvas, Spinner } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars, faCog } from "@fortawesome/free-solid-svg-icons";
@@ -161,13 +161,6 @@ const App = () => {
         console.error("Error updating language in Firestore:", error);
       }
     }
-  };
-  const handleAppModeChange = (selectedKey) => {
-    // alert(selectedKey);
-    setAppMode(selectedKey);
-    setInstructions(promptSet[selectedKey]);
-    resetTranscript();
-    resetMessages();
   };
 
   // const onSend = async () => {
@@ -695,62 +688,6 @@ const App = () => {
         >
           <FontAwesomeIcon icon={faBars} size="1x" />
         </Button>
-        &nbsp;&nbsp;&nbsp;
-        <Dropdown
-          style={{
-            backgroundColor: "#FFFEF5",
-          }}
-          onSelect={(selectedKey) => handleAppModeChange(selectedKey)}
-        >
-          <Dropdown.Toggle
-            variant="secondary"
-            id="dropdown-custom-components"
-            className="custom-dropdown-toggle"
-            style={{
-              width: "min-content",
-              transition: "min-width 0.3s ease", // Smooth width transition
-            }}
-          >
-            {appMode === "law"
-              ? lang[language][`title.law`]
-              : appMode === "undocumented"
-              ? lang[language][`title.undocumented`]
-              : appMode === "fafsa"
-              ? lang[language][`title.fafsa`]
-              : appMode === "resume"
-              ? lang[language][`title.resume`]
-              : appMode === "career"
-              ? lang[language]["title.career"]
-              : appMode === "counselor"
-              ? lang[language][`title.counselor`]
-              : ""}
-          </Dropdown.Toggle>
-
-          <Dropdown.Menu>
-            <Dropdown.Item eventKey="undocumented">
-              {lang[language][`title.undocumented`]}
-            </Dropdown.Item>
-            <Dropdown.Item eventKey="career">
-              {" "}
-              {lang[language][`title.career`]}
-            </Dropdown.Item>
-            <Dropdown.Item eventKey="law">
-              {lang[language][`title.law`]}
-            </Dropdown.Item>
-            <Dropdown.Item eventKey="fafsa">
-              {" "}
-              {lang[language][`title.fafsa`]}
-            </Dropdown.Item>
-            {/* <Dropdown.Item eventKey="resume">
-                  {" "}
-                  {lang[language][`title.resume`]}
-                </Dropdown.Item> */}
-            <Dropdown.Item eventKey="counselor">
-              {" "}
-              {lang[language][`title.counselor`]}
-            </Dropdown.Item>
-          </Dropdown.Menu>
-        </Dropdown>
         &nbsp;&nbsp; &nbsp;
         <Form>
           <Form.Check
