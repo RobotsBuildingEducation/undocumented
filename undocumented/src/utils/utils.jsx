@@ -96,45 +96,75 @@ export function cleanInstructions(
 ) {
   if (!input) return "";
 
-  let output = input;
+  let output = String(input).replace(/\r\n/g, "\n"); // normalize newlines
 
-  // 1) Create an array of prompts we want to remove.
-  // If mustCleanAll is true, remove references to every promptSet. Otherwise just remove the current instructions.
-  const allPrompts = Object.values(promptSet); // e.g. [promptSet["undocumented"], promptSet["resume"], ...]
-  const promptsToRemove = mustCleanAll ? allPrompts : [currentInstructions];
-
-  // 2) Remove any leftover text from the known prompt sets that might appear.
+  // 1) Remove known prompt templates
+  const promptsToRemove = (
+    mustCleanAll ? Object.values(promptSet) : [currentInstructions]
+  ).filter(Boolean);
   for (const promptText of promptsToRemove) {
-    if (!promptText) continue;
     const escaped = escapeRegex(promptText);
-    const regex = new RegExp(escaped, "g");
-    output = output.replace(regex, "");
+    output = output.replace(new RegExp(escaped, "g"), "");
   }
 
-  // 3) Remove language prefix:
-  // e.g., "The user wants you speaking in spanish" or "The user wants you communicating in english"
-  const languagePrefixPattern =
-    /^(The user wants you speaking in spanish|The user wants you communicating in english)\s*/i;
-  output = output.replace(languagePrefixPattern, "");
+  // 2) Remove language prefix (only if it appears at the very start)
+  output = output.replace(
+    /^\s*(The user wants you speaking in spanish|The user wants you communicating in english)\s*/i,
+    ""
+  );
 
-  // 4) Remove state prefix, if present.
-  if (statePrefix && statePrefix.trim().length > 0) {
-    const escapedState = escapeRegex(statePrefix);
-    const statePrefixPattern = new RegExp(`^${escapedState}\\s*`, "i");
-    output = output.replace(statePrefixPattern, "");
+  // 3) Remove state prefix (only if provided and at the very start)
+  if (statePrefix && statePrefix.trim()) {
+    const escapedState = escapeRegex(statePrefix.trim());
+    output = output.replace(new RegExp(`^\\s*${escapedState}\\s*`, "i"), "");
   }
 
-  // 5) Remove any JSON block found within the output.
-  const jsonBlock = extractJSONFromMessage(output);
-  if (jsonBlock) {
+  // 4) Strip ALL JSON blocks (assistant may append structured data)
+  let jsonBlock = extractJSONFromMessage(output);
+  while (jsonBlock) {
     output = output.replace(jsonBlock, "");
+    jsonBlock = extractJSONFromMessage(output);
   }
 
-  // 6) Final cleanup: remove extra whitespace or newlines.
-  output = output.replace(/\s\s+/g, " ").trim();
-  output = output.replace(/^null\s*/, "");
+  // If a trailing "Updated your profile:" label is left behind, remove it
+  output = output.replace(/(?:^|\n)\s*Updated your profile:\s*$/i, "");
 
-  return output;
+  // 5) Whitespace tidy **without** breaking Markdown
+  //    - Preserve code fences verbatim
+  //    - Keep newlines
+  //    - Collapse excessive spaces/tabs outside code blocks
+  const CODEBLOCK_RE = /```[\s\S]*?```/g;
+  const parts = [];
+  let last = 0;
+  let m;
+
+  while ((m = CODEBLOCK_RE.exec(output)) !== null) {
+    if (m.index > last)
+      parts.push({ type: "text", value: output.slice(last, m.index) });
+    parts.push({ type: "code", value: m[0] });
+    last = m.index + m[0].length;
+  }
+  if (last < output.length)
+    parts.push({ type: "text", value: output.slice(last) });
+
+  const tidy = (s) =>
+    s
+      // collapse multiple spaces/tabs but DO NOT touch newlines
+      .replace(/[^\S\r\n]{2,}/g, " ")
+      // collapse 3+ blank lines to exactly 2 (good for Markdown)
+      .replace(/\n{3,}/g, "\n\n")
+      // strip trailing spaces at line ends
+      .replace(/[ \t]+$/gm, "");
+
+  output = parts
+    .map((p) => (p.type === "code" ? p.value : tidy(p.value)))
+    .join("");
+
+  // 6) Remove accidental leading "null"
+  output = output.replace(/^\s*null\s*/i, "");
+
+  // 7) Final trim (keep it simple; Markdown doesn't need trailing spaces globally)
+  return output.trim();
 }
 
 export const lang = {
